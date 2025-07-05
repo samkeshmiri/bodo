@@ -10,7 +10,7 @@ Bodo is a full-stack fitness fundraising platform that connects fitness activiti
 - **Fitness Integration**: Strava API
 - **Blockchain**: Ethers.js for escrow simulation
 - **Validation**: Zod schemas
-- **Styling**: Tailwind CSS with custom gradients and components
+- **Styling**: Tailwind CSS with PostCSS and Autoprefixer for modern CSS processing
 
 ## Project Structure
 ```
@@ -34,6 +34,7 @@ bodo/
 ├── prisma/                # Database schema and migrations
 │   ├── schema.prisma      # Database schema
 │   └── seed.ts            # Database seeding
+├── postcss.config.js      # PostCSS configuration with Tailwind and Autoprefixer
 └── package.json           # Dependencies and scripts
 ```
 
@@ -85,10 +86,11 @@ The project uses PostgreSQL with Prisma ORM. Key models:
 - Track escrow balances
 
 ### 7. UI/UX Patterns
-- Use Tailwind CSS for styling
-- Implement responsive design
+- Use Tailwind CSS with PostCSS and Autoprefixer for modern CSS processing
+- Implement responsive design with mobile-first approach
 - Use gradient backgrounds and modern components
 - Follow accessibility best practices
+- Leverage shadcn/ui components for consistent design system
 
 ## Coding Guidelines
 
