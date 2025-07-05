@@ -181,4 +181,12 @@ Required environment variables:
 - Blockchain operations are simulated for demonstration
 - Focus on clean, maintainable code
 - Prioritize user experience and security
-- Document complex business logic 
+- Document complex business logic
+
+## File Maintenance
+- Keep this `.cursorrules` file updated when project structure, patterns, or conventions change
+- Update the tech stack section when new dependencies are added
+- Modify database schema section when Prisma models change
+- Update environment variables section when new env vars are required
+- Revise coding guidelines when new patterns emerge
+- Add new common tasks as they become frequent development activities 
