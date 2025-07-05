@@ -32,24 +32,24 @@ export default function HomePage() {
         <div className="w-full max-w-md rounded-3xl bg-black/40 backdrop-blur-md p-8 flex flex-col items-center shadow-xl">
           <h1 className="text-3xl md:text-4xl font-bold text-white mb-2 text-center">Run With Purpose</h1>
           <p className="text-lg text-gray-200 mb-8 text-center">Get fit and raise money for causes you care about</p>
-                  {/* Navigation Links */}
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-          <h2 className="text-lg font-semibold text-gray-800 mb-3">Quick Navigation</h2>
-          <div className="flex flex-wrap gap-2">
-            <Link 
-              href="/campaigns"
-              className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm"
-            >
-              Browse Campaigns
-            </Link>
-            <Link 
-              href="/fundraises"
-              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm"
-            >
-              View Fundraises
-            </Link>
+          {/* Navigation Links */}
+          <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+            <h2 className="text-lg font-semibold text-gray-800 mb-3">Quick Navigation</h2>
+            <div className="flex flex-wrap gap-2">
+              <Link 
+                href="/campaigns"
+                className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm"
+              >
+                Browse Campaigns
+              </Link>
+              <Link 
+                href="/fundraises"
+                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm"
+              >
+                View Fundraises
+              </Link>
+            </div>
           </div>
-        </div>
           <Link
             href="/login"
             className="w-full rounded-full bg-white text-gray-900 text-lg font-semibold py-3 shadow-lg hover:bg-gray-100 transition text-center focus:outline-none focus:ring-2 focus:ring-indigo-500"

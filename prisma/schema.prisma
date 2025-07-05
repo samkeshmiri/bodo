@@ -42,6 +42,7 @@ model Wallet {
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([userId, provider])
   @@map("wallets")
 }
 

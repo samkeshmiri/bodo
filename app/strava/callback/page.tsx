@@ -20,11 +20,12 @@ function StravaCallbackInner() {
         setStatus('You must be logged in to connect Strava.');
         return;
       }
+      const redirectUri = `${window.location.origin}/strava/callback`;
       try {
         const res = await fetch('/api/strava/connect', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code, privyUserId: privyUser.id })
+          body: JSON.stringify({ code, privyUserId: privyUser.id, redirectUri })
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed to connect Strava');
