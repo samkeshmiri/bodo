@@ -93,10 +93,10 @@ export async function POST(request: NextRequest) {
         }
 
         // Get activity details from Strava
-        let activityDetails
+        let activityDetails: any
         try {
             const activities = await getStravaActivities(accessToken)
-            activityDetails = activities.find(activity => activity.id === validatedData.object_id)
+            activityDetails = activities.find((activity: any) => activity.id === validatedData.object_id)
 
             if (!activityDetails) {
                 console.log(`❌ Activity ${validatedData.object_id} not found in recent activities`)

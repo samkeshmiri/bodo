@@ -27,6 +27,18 @@ jobs:
       
     - name: Build project
       run: npm run build
+      env:
+        NEXT_PUBLIC_PRIVY_APP_ID: dummy
+        NEXT_PUBLIC_RPC_URL: https://eth-mainnet.g.alchemy.com/v2/dummy
+        DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
+        PRIVY_APP_ID: dummy
+        PRIVY_APP_SECRET: dummy
+        STRAVA_CLIENT_ID: dummy
+        STRAVA_CLIENT_SECRET: dummy
+        ESCROW_WALLET_PRIVATE_KEY: dummy
+        ESCROW_WALLET_ADDRESS: dummy
+        JWT_SECRET: dummy
+        STRAVA_WEBHOOK_SECRET: dummy
       
   deploy:
     runs-on: ubuntu-latest
