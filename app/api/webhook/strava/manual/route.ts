@@ -7,16 +7,8 @@ export async function POST(request: NextRequest) {
     try {
         const body = await validateRequest(createActivitySchema, request)
 
-        // For testing, we'll get fundraiserUserId from the request body
-        // In a real app, this would be determined from the Strava user ID
-        const { fundraiserUserId } = await request.json()
-
-        if (!fundraiserUserId) {
-            return NextResponse.json(
-                { error: 'Fundraiser user ID is required' },
-                { status: 400 }
-            )
-        }
+        // fundraiserUserId is already validated in the schema
+        const { fundraiserUserId } = body
 
         // Check if user exists
         const user = await prisma.user.findUnique({
@@ -48,15 +40,15 @@ export async function POST(request: NextRequest) {
         // Create activity
         const activity = await prisma.activity.create({
             data: {
-                fundraiserUserId,
+                fundraiserUserId: body.fundraiserUserId,
                 distance: body.distance,
                 source: body.source,
                 externalActivityId: body.externalActivityId,
-                activityDate: body.activityDate || new Date().toISOString(),
+                activityDate: body.activityDate,
             }
         })
 
-        console.log(`🏃 Activity created: ${body.distance}km for user ${fundraiserUserId}`)
+        console.log(`🏃 Activity created: ${body.distance}km for user ${body.fundraiserUserId}`)
 
         // Process payouts
         const payouts = await escrowService.processActivity(activity.id)

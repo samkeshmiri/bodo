@@ -2,6 +2,10 @@ import { ethers } from 'ethers'
 import { prisma } from './prisma'
 import { PrivyClient } from '@privy-io/server-auth'
 
+// NOTE: This is a SIMULATED escrow service for demo purposes.
+// All blockchain transactions are simulated and no actual crypto is transferred.
+// In production, this would integrate with real blockchain networks.
+
 // Lazy-load provider and escrow wallet to avoid build-time initialization
 let provider: ethers.JsonRpcProvider | null = null
 let escrowWallet: ethers.Wallet | null = null
@@ -11,9 +15,9 @@ let privyClient: PrivyClient | null = null
 
 function getProvider(): ethers.JsonRpcProvider {
     if (!provider) {
-        // Use Privy's RPC endpoint for Sepolia
-        const privyRpcUrl = `https://rpc.privy.io/v1/${process.env.PRIVY_APP_ID}/sepolia`
-        provider = new ethers.JsonRpcProvider(privyRpcUrl)
+        // Use a reliable Sepolia RPC endpoint
+        const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || 'https://sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161'
+        provider = new ethers.JsonRpcProvider(rpcUrl)
     }
     return provider
 }
@@ -68,37 +72,40 @@ export class EscrowService {
 
     private async checkTransactionStatus(escrowTx: any): Promise<void> {
         try {
-            const receipt = await getProvider().getTransactionReceipt(escrowTx.txHash)
+            console.log(`Simulating transaction status check for ${escrowTx.txHash}`)
 
-            if (receipt) {
-                const status = receipt.status === 1 ? 'confirmed' : 'failed'
+            // Simulate transaction confirmation (always successful for demo)
+            const status = 'confirmed'
+            const blockNumber = Math.floor(Math.random() * 1000000) + 1000000 // Random block number
 
-                await prisma.escrowTransaction.update({
-                    where: { id: escrowTx.id },
+            await prisma.escrowTransaction.update({
+                where: { id: escrowTx.id },
+                data: {
+                    status,
+                    blockNumber,
+                },
+            })
+
+            if (status === 'confirmed') {
+                // Update pledge status
+                await prisma.pledge.update({
+                    where: { id: escrowTx.pledgeId },
                     data: {
-                        status,
-                        blockNumber: receipt.blockNumber,
+                        escrowConfirmed: true,
+                        status: 'active',
                     },
                 })
-
-                if (status === 'confirmed') {
-                    // Update pledge status
-                    await prisma.pledge.update({
-                        where: { id: escrowTx.pledgeId },
-                        data: {
-                            escrowConfirmed: true,
-                            status: 'active',
-                        },
-                    })
-                }
+                console.log(`Simulated transaction confirmed for pledge ${escrowTx.pledgeId}`)
             }
         } catch (error) {
-            console.error(`Error checking transaction status for ${escrowTx.txHash}:`, error)
+            console.error(`Error checking simulated transaction status for ${escrowTx.txHash}:`, error)
         }
     }
 
     async processPayout(pledgeId: string, activityId: string, amount: number): Promise<string> {
         try {
+            console.log(`Starting simulated payout process for pledge ${pledgeId}, activity ${activityId}, amount ${amount}`)
+
             // Get pledge and activity details
             const pledge = await prisma.pledge.findUnique({
                 where: { id: pledgeId },
@@ -106,7 +113,7 @@ export class EscrowService {
             })
 
             if (!pledge) {
-                throw new Error('Pledge not found')
+                throw new Error(`Pledge not found: ${pledgeId}`)
             }
 
             const activity = await prisma.activity.findUnique({
@@ -114,37 +121,20 @@ export class EscrowService {
             })
 
             if (!activity) {
-                throw new Error('Activity not found')
+                throw new Error(`Activity not found: ${activityId}`)
             }
 
             // Get user's wallet address
             const userWallet = pledge.fundraise.user.wallets.find(w => w.status === 'active')
             if (!userWallet) {
-                throw new Error('User wallet not found')
+                throw new Error(`User wallet not found for user ${pledge.fundraise.user.id}`)
             }
 
-            // USDC contract address on Sepolia testnet
-            const USDC_CONTRACT_ADDRESS = '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238';
+            console.log(`Found user wallet: ${userWallet.address}`)
 
-            // Convert payout amount to USDC (6 decimals)
-            const usdcAmount = ethers.parseUnits(amount.toString(), 6).toString();
-
-            // Use escrow wallet's private key to send USDC
-            if (!process.env.ESCROW_WALLET_PRIVATE_KEY) {
-                throw new Error('ESCROW_WALLET_PRIVATE_KEY environment variable is required');
-            }
-
-            const escrowWallet = new ethers.Wallet(process.env.ESCROW_WALLET_PRIVATE_KEY, getProvider());
-            const tx = await escrowWallet.sendTransaction({
-                to: USDC_CONTRACT_ADDRESS,
-                value: '0x0', // No ETH sent, only USDC tokens
-                data: new ethers.Interface([
-                    'function transfer(address to, uint256 amount) returns (bool)'
-                ]).encodeFunctionData('transfer', [userWallet.address, usdcAmount]),
-            });
-
-            // Get transaction hash
-            const txHash = tx.hash;
+            // Generate a fake transaction hash for simulation
+            const fakeTxHash = `0x${Math.random().toString(16).substring(2, 66).padEnd(64, '0')}`;
+            console.log(`Simulated transaction hash: ${fakeTxHash}`);
 
             // Create payout record
             await prisma.payout.create({
@@ -153,7 +143,7 @@ export class EscrowService {
                     activityId,
                     amount: amount,
                     status: 'completed',
-                    txHash: txHash,
+                    txHash: fakeTxHash,
                 },
             })
 
@@ -170,9 +160,11 @@ export class EscrowService {
                 },
             })
 
-            return txHash;
+            console.log(`Successfully simulated payout: ${amount} to ${userWallet.address}`);
+
+            return fakeTxHash;
         } catch (error) {
-            console.error('Error processing payout:', error)
+            console.error('Error processing simulated payout:', error)
             throw error
         }
     }
@@ -184,18 +176,22 @@ export class EscrowService {
         txHash: string
     ): Promise<void> {
         try {
+            console.log(`Creating simulated escrow transaction for pledge ${pledgeId}`)
+
             await prisma.escrowTransaction.create({
                 data: {
                     pledgeId,
                     fromAddress,
-                    toAddress: process.env.ESCROW_WALLET_ADDRESS!,
+                    toAddress: process.env.ESCROW_WALLET_ADDRESS || '0x0000000000000000000000000000000000000000',
                     amount,
                     txHash,
                     status: 'pending',
                 },
             })
+
+            console.log(`Simulated escrow transaction created for pledge ${pledgeId}`)
         } catch (error) {
-            console.error('Error creating escrow transaction:', error)
+            console.error('Error creating simulated escrow transaction:', error)
             throw error
         }
     }
@@ -228,22 +224,47 @@ export class EscrowService {
             })
             if (!activity) throw new Error('Activity not found')
 
+            console.log(`Processing activity ${activityId} for user ${activity.fundraiserUserId}, distance: ${activity.distance}km`)
+
             // Find all active pledges for the fundraiser
             const pledges = await prisma.pledge.findMany({
                 where: {
-                    fundraiseId: activity.fundraiserUserId,
+                    fundraise: {
+                        userId: activity.fundraiserUserId
+                    },
                     status: 'active',
                 },
+                include: {
+                    fundraise: {
+                        include: {
+                            user: {
+                                include: {
+                                    wallets: true
+                                }
+                            }
+                        }
+                    }
+                }
             })
+
+            console.log(`Found ${pledges.length} active pledges for activity ${activityId}`)
 
             // Process payouts for each pledge
             const payouts = []
             for (const pledge of pledges) {
                 try {
-                    const txHash = await this.processPayout(pledge.id, activityId, Number(pledge.perKmRate) * Number(activity.distance))
-                    payouts.push({ pledgeId: pledge.id, txHash })
+                    const payoutAmount = Number(pledge.perKmRate) * Number(activity.distance)
+                    console.log(`Processing payout for pledge ${pledge.id}: ${payoutAmount} (${pledge.perKmRate} per km * ${activity.distance} km)`)
+
+                    const txHash = await this.processPayout(pledge.id, activityId, payoutAmount)
+                    payouts.push({ pledgeId: pledge.id, txHash, status: 'success' })
                 } catch (error) {
-                    payouts.push({ pledgeId: pledge.id, error: error instanceof Error ? error.message : error })
+                    console.error(`Error processing payout for pledge ${pledge.id}:`, error)
+                    payouts.push({
+                        pledgeId: pledge.id,
+                        error: error instanceof Error ? error.message : String(error),
+                        status: 'failed'
+                    })
                 }
             }
             return payouts

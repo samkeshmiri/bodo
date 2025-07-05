@@ -65,6 +65,9 @@ STRAVA_CLIENT_SECRET=your_strava_client_secret
 NEXT_PUBLIC_RPC_URL=your_rpc_url
 ESCROW_WALLET_PRIVATE_KEY=your_private_key
 ESCROW_WALLET_ADDRESS=your_wallet_address
+
+# Note: The escrow service is currently simulated for demo purposes.
+# No actual blockchain transactions are executed.
 ```
 
 ## GitHub Actions Setup
@@ -82,9 +85,11 @@ Go to your GitHub repository → Settings → Secrets and variables → Actions,
 - `PRIVY_APP_SECRET`: Your Privy app secret
 - `STRAVA_CLIENT_ID`: Your Strava client ID
 - `STRAVA_CLIENT_SECRET`: Your Strava client secret
-- `NEXT_PUBLIC_RPC_URL`: Your blockchain RPC URL
-- `ESCROW_WALLET_PRIVATE_KEY`: Your escrow wallet private key
-- `ESCROW_WALLET_ADDRESS`: Your escrow wallet address
+- `NEXT_PUBLIC_RPC_URL`: Your blockchain RPC URL (optional for simulation mode)
+- `ESCROW_WALLET_PRIVATE_KEY`: Your escrow wallet private key (optional for simulation mode)
+- `ESCROW_WALLET_ADDRESS`: Your escrow wallet address (optional for simulation mode)
+
+**Note**: The escrow service is currently simulated for demo purposes. No actual blockchain transactions are executed.
 
 ### 2. SSH Key Setup
 
