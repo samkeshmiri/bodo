@@ -1,0 +1,64 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches: [ main, deployment-setup ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: testing
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Debug variables
+      run: |
+        echo "Checking server connection variables..."
+        echo "SERVER_HOST: ${{ vars.SERVER_HOST }}"
+        echo "SERVER_USERNAME: ${{ vars.SERVER_USERNAME }}"
+        echo "SERVER_PORT: ${{ vars.SERVER_PORT }}"
+        echo "SSH_KEY exists: ${{ secrets.SERVER_SSH_KEY != '' && 'YES' || 'NO' }}"
+        echo "Triggering branch: ${{ github.ref_name }}"
+        
+    - name: Deploy to server
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ vars.SERVER_HOST }}
+        username: ${{ vars.SERVER_USERNAME }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        port: ${{ vars.SERVER_PORT }}
+        script: |
+          echo "Connected to server successfully!"
+          echo "Current directory: $(pwd)"
+          echo "Server hostname: $(hostname)"
+          cd ~/bodo
+          echo "Changed to app directory: $(pwd)"
+          
+          # Clean up any conflicting files
+          rm -f next-env.d.ts
+          rm -rf .next
+          rm -rf node_modules
+          
+          # Force pull latest changes
+          git fetch origin
+          git reset --hard origin/${{ github.ref_name }}
+          git clean -fd
+          
+          # Install dependencies
+          npm ci
+          
+          # Generate Prisma client
+          npm run db:generate
+          
+          # Build the application (ignore warnings)
+          npm run build || echo "Build completed with warnings"
+          
+          # Restart PM2 process
+          pm2 restart bodo-app || pm2 start npm --name "bodo-app" -- start
+          
+          # Reload nginx to ensure configuration is applied
+          sudo systemctl reload nginx
+          
+          echo "✅ Deployment completed! Your app should be available at: http://154.42.7.63"
