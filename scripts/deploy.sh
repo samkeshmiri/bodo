@@ -79,6 +79,11 @@ pm2 save
 # Setup PM2 to start on boot
 pm2 startup
 
+# Reload nginx to ensure configuration is applied
+echo -e "${YELLOW}🔄 Reloading nginx...${NC}"
+sudo systemctl reload nginx
+
 echo -e "${GREEN}🎉 Deployment completed successfully!${NC}"
 echo -e "${YELLOW}📊 Check application status: pm2 status${NC}"
-echo -e "${YELLOW}📋 View logs: pm2 logs $APP_NAME${NC}" 
+echo -e "${YELLOW}📋 View logs: pm2 logs $APP_NAME${NC}"
+echo -e "${YELLOW}🌐 Your app should be available at: http://154.42.7.63${NC}" 

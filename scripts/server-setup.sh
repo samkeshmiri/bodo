@@ -72,6 +72,9 @@ sudo nginx -t
 sudo systemctl enable nginx
 sudo systemctl start nginx
 
+# Reload nginx to apply configuration
+sudo systemctl reload nginx
+
 # Setup firewall (if ufw is available)
 if command -v ufw &> /dev/null; then
     echo -e "${YELLOW}🔥 Setting up firewall...${NC}"
