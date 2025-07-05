@@ -1,121 +1,237 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { validateRequest, stravaWebhookSchema, createActivitySchema } from '@/lib/validations'
+import { validateRequest, stravaWebhookSchema } from '@/lib/validations'
 import { escrowService } from '@/lib/escrow'
+import { getStravaUser, getStravaActivities, refreshStravaToken } from '@/lib/strava'
 
 export async function POST(request: NextRequest) {
     try {
-        const webhookData = await validateRequest(stravaWebhookSchema, request)
-
-        console.log('📡 Strava webhook received:', {
-            objectType: webhookData.object_type,
-            objectId: webhookData.object_id,
-            aspectType: webhookData.aspect_type,
-            ownerId: webhookData.owner_id
-        })
-
-        // Only process activity events
-        if (webhookData.object_type !== 'activity') {
-            return NextResponse.json({ message: 'Ignored non-activity event' })
-        }
-
-        // Only process create/update events
-        if (!['create', 'update'].includes(webhookData.aspect_type)) {
-            return NextResponse.json({ message: 'Ignored non-create/update event' })
-        }
-
-        // Process the activity
-        await processStravaActivity(webhookData)
-
-        return NextResponse.json({
-            message: 'Webhook processed successfully',
-            activityId: webhookData.object_id
-        })
-    } catch (error) {
-        console.error('❌ Error processing Strava webhook:', error)
-
-        if (error instanceof Error && error.name === 'ZodError') {
+        // Verify webhook signature (in production, implement proper verification)
+        const signature = request.headers.get('x-hub-signature')
+        if (!signature) {
             return NextResponse.json(
-                { error: 'Invalid webhook data' },
-                { status: 400 }
+                { error: 'Missing webhook signature' },
+                { status: 401 }
             )
         }
 
-        return NextResponse.json(
-            { error: 'Internal server error' },
-            { status: 500 }
-        )
-    }
-}
+        // Parse and validate webhook payload
+        const body = await request.json()
+        const validatedData = stravaWebhookSchema.parse(body)
 
-/**
- * Helper function to process Strava activity
- */
-async function processStravaActivity(webhookData: any) {
-    try {
-        const activityId = webhookData.object_id
-        const ownerId = webhookData.owner_id
+        console.log('📨 Strava webhook received:', {
+            objectType: validatedData.object_type,
+            objectId: validatedData.object_id,
+            aspectType: validatedData.aspect_type,
+            ownerId: validatedData.owner_id
+        })
 
-        // In a real implementation, you would:
-        // 1. Fetch activity details from Strava API using the activity ID
-        // 2. Get the user's Strava ID and find the corresponding user in your database
-        // 3. Create or update the activity record
-        // 4. Process payouts
+        // Only process activity events
+        if (validatedData.object_type !== 'activity') {
+            return NextResponse.json(
+                { message: 'Ignoring non-activity event' },
+                { status: 200 }
+            )
+        }
 
-        // For now, we'll simulate this process
-        console.log(`🔄 Processing Strava activity ${activityId} for user ${ownerId}`)
+        // Only process create/update events
+        if (!['create', 'update'].includes(validatedData.aspect_type)) {
+            return NextResponse.json(
+                { message: 'Ignoring non-create/update event' },
+                { status: 200 }
+            )
+        }
 
         // Find user by Strava ID
         const user = await prisma.user.findFirst({
-            where: {
-                stravaId: ownerId.toString()
+            where: { stravaId: validatedData.owner_id.toString() },
+            include: {
+                wallets: {
+                    where: { status: 'active' }
+                }
             }
         })
 
         if (!user) {
-            console.log(`⚠️ No user found for Strava ID: ${ownerId}`)
-            return
+            console.log(`❌ User not found for Strava ID: ${validatedData.owner_id}`)
+            return NextResponse.json(
+                { error: 'User not found' },
+                { status: 404 }
+            )
         }
 
-        // Check if activity already exists
+        if (!user.stravaAccessToken) {
+            console.log(`❌ User ${user.id} has no Strava access token`)
+            return NextResponse.json(
+                { error: 'User not connected to Strava' },
+                { status: 400 }
+            )
+        }
+
+        // Check if token needs refresh
+        let accessToken = user.stravaAccessToken
+        if (user.stravaTokenExpiresAt && user.stravaTokenExpiresAt < new Date()) {
+            console.log(`🔄 Refreshing Strava token for user ${user.id}`)
+            try {
+                const tokens = await refreshStravaToken(user.stravaRefreshToken!)
+                await prisma.user.update({
+                    where: { id: user.id },
+                    data: {
+                        stravaAccessToken: tokens.access_token,
+                        stravaRefreshToken: tokens.refresh_token,
+                        stravaTokenExpiresAt: new Date(tokens.expires_at * 1000),
+                    }
+                })
+                accessToken = tokens.access_token
+            } catch (error) {
+                console.error('❌ Failed to refresh Strava token:', error)
+                return NextResponse.json(
+                    { error: 'Failed to refresh Strava token' },
+                    { status: 500 }
+                )
+            }
+        }
+
+        // Get activity details from Strava
+        let activityDetails
+        try {
+            const activities = await getStravaActivities(accessToken)
+            activityDetails = activities.find(activity => activity.id === validatedData.object_id)
+
+            if (!activityDetails) {
+                console.log(`❌ Activity ${validatedData.object_id} not found in recent activities`)
+                return NextResponse.json(
+                    { error: 'Activity not found' },
+                    { status: 404 }
+                )
+            }
+        } catch (error) {
+            console.error('❌ Failed to fetch activity from Strava:', error)
+            return NextResponse.json(
+                { error: 'Failed to fetch activity from Strava' },
+                { status: 500 }
+            )
+        }
+
+        // Check if activity already exists in our database
         const existingActivity = await prisma.activity.findFirst({
             where: {
-                externalActivityId: activityId.toString(),
-                source: 'Strava'
+                fundraiserUserId: user.id,
+                externalActivityId: activityDetails.id.toString(),
             }
         })
 
         if (existingActivity) {
-            console.log(`⚠️ Activity ${activityId} already processed`)
-            return
+            console.log(`ℹ️ Activity ${activityDetails.id} already exists in database`)
+            return NextResponse.json(
+                { message: 'Activity already processed' },
+                { status: 200 }
+            )
         }
 
-        // For simulation, we'll create a mock activity
-        // In reality, you'd fetch this data from Strava API
-        const mockDistance = Math.random() * 20 + 1 // 1-21 km
-
+        // Create activity in our database
         const activity = await prisma.activity.create({
             data: {
                 fundraiserUserId: user.id,
-                distance: mockDistance,
-                source: 'Strava',
-                externalActivityId: activityId.toString()
+                distance: activityDetails.distance / 1000, // Convert meters to kilometers
+                source: 'strava',
+                externalActivityId: activityDetails.id.toString(),
+                activityDate: new Date(activityDetails.start_date),
             }
         })
 
-        console.log(`🏃 Activity created: ${mockDistance}km for user ${user.id}`)
+        console.log(`✅ Created activity: ${activity.id} for user ${user.id}`)
 
-        // Process payouts
-        const payouts = await escrowService.processActivity(activity.id)
+        // Find all active pledges for this user's fundraises
+        const pledges = await prisma.pledge.findMany({
+            where: {
+                fundraise: {
+                    userId: user.id
+                },
+                status: 'active',
+                escrowConfirmed: true, // Only process pledges that have been escrowed
+            },
+            include: {
+                fundraise: true
+            }
+        })
 
-        if (payouts.length > 0) {
-            console.log(`💰 Processed ${payouts.length} payouts for activity ${activity.id}`)
-        } else {
-            console.log(`ℹ️ No payouts processed for activity ${activity.id}`)
+        if (pledges.length === 0) {
+            console.log(`ℹ️ No active pledges found for user ${user.id}`)
+            return NextResponse.json(
+                {
+                    message: 'Activity created but no active pledges found',
+                    activityId: activity.id
+                },
+                { status: 200 }
+            )
         }
 
+        // Calculate and process payouts for each pledge
+        const payoutResults = []
+        for (const pledge of pledges) {
+            try {
+                const payoutAmount = Number(pledge.perKmRate) * Number(activity.distance)
+
+                // Check if pledge has enough remaining amount
+                if (Number(pledge.amountRemaining) < payoutAmount) {
+                    console.log(`⚠️ Pledge ${pledge.id} has insufficient remaining amount`)
+                    payoutResults.push({
+                        pledgeId: pledge.id,
+                        error: 'Insufficient remaining amount',
+                        calculatedAmount: payoutAmount,
+                        remainingAmount: Number(pledge.amountRemaining)
+                    })
+                    continue
+                }
+
+                // Process the payout
+                const txHash = await escrowService.processPayout(
+                    pledge.id,
+                    activity.id,
+                    payoutAmount
+                )
+
+                payoutResults.push({
+                    pledgeId: pledge.id,
+                    txHash,
+                    amount: payoutAmount,
+                    status: 'success'
+                })
+
+                console.log(`💰 Processed payout: ${payoutAmount} for pledge ${pledge.id}`)
+
+            } catch (error) {
+                console.error(`❌ Failed to process payout for pledge ${pledge.id}:`, error)
+                payoutResults.push({
+                    pledgeId: pledge.id,
+                    error: error instanceof Error ? error.message : 'Unknown error',
+                    status: 'failed'
+                })
+            }
+        }
+
+        return NextResponse.json({
+            message: 'Activity processed successfully',
+            activityId: activity.id,
+            payouts: payoutResults,
+            totalPledges: pledges.length,
+            successfulPayouts: payoutResults.filter(r => r.status === 'success').length
+        }, { status: 200 })
+
     } catch (error) {
-        console.error('❌ Error processing Strava activity:', error)
-        throw error
+        if (error instanceof Error && error.name === 'ZodError') {
+            console.error('❌ Webhook validation failed:', error)
+            return NextResponse.json(
+                { error: 'Invalid webhook payload' },
+                { status: 400 }
+            )
+        }
+
+        console.error('❌ Error processing Strava webhook:', error)
+        return NextResponse.json(
+            { error: 'Internal server error' },
+            { status: 500 }
+        )
     }
 } 

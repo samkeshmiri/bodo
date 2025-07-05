@@ -111,7 +111,8 @@ export async function POST(request: NextRequest) {
                 title: body.title,
                 description: body.description,
                 targetAmount: body.targetAmount,
-                deadline: new Date(body.deadline)
+                deadline: body.deadline,
+                shareableLink: Math.random().toString(36).substring(2, 10),
             },
             include: {
                 user: {

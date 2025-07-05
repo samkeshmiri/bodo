@@ -200,6 +200,40 @@ export class EscrowService {
             return null
         }
     }
+
+    // Process payouts for all pledges for a given activity
+    async processActivity(activityId: string): Promise<any[]> {
+        try {
+            // Find the activity
+            const activity = await prisma.activity.findUnique({
+                where: { id: activityId },
+            })
+            if (!activity) throw new Error('Activity not found')
+
+            // Find all active pledges for the fundraiser
+            const pledges = await prisma.pledge.findMany({
+                where: {
+                    fundraiseId: activity.fundraiserUserId,
+                    status: 'active',
+                },
+            })
+
+            // Process payouts for each pledge
+            const payouts = []
+            for (const pledge of pledges) {
+                try {
+                    const txHash = await this.processPayout(pledge.id, activityId, Number(pledge.perKmRate) * Number(activity.distance))
+                    payouts.push({ pledgeId: pledge.id, txHash })
+                } catch (error) {
+                    payouts.push({ pledgeId: pledge.id, error: error instanceof Error ? error.message : error })
+                }
+            }
+            return payouts
+        } catch (error) {
+            console.error('Error processing activity:', error)
+            throw error
+        }
+    }
 }
 
 // Export singleton instance
