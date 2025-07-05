@@ -102,6 +102,30 @@ export async function PUT(
             data: updateData
         })
 
+        // Upsert wallet if walletAddress is present
+        if (updateData.walletAddress) {
+            await prisma.wallet.upsert({
+                where: {
+                    userId_provider: {
+                        userId: user.id,
+                        provider: 'privy'
+                    }
+                },
+                update: {
+                    address: updateData.walletAddress,
+                    status: 'active',
+                    provider: 'privy',
+                    userId: user.id
+                },
+                create: {
+                    userId: user.id,
+                    address: updateData.walletAddress,
+                    provider: 'privy',
+                    status: 'active'
+                }
+            })
+        }
+
         return NextResponse.json({
             message: 'User updated successfully',
             user: {

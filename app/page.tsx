@@ -61,10 +61,16 @@ export default function HomePage() {
         setLoading(true);
         setAuthError('');
         try {
+          // Extract wallet address from privyUser
+          const walletAddress = privyUser.wallet?.address;
           const res = await fetch('/api/user', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ privyUserId: privyUser.id, status: 'active' })
+            body: JSON.stringify({
+              privyUserId: privyUser.id,
+              status: 'active',
+              ...(walletAddress ? { walletAddress } : {})
+            })
           });
           const data = await res.json();
           if (!res.ok && data.userId) {

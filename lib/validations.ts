@@ -14,6 +14,7 @@ export const updateUserSchema = z.object({
     stravaRefreshToken: z.string().optional(),
     stravaTokenExpiresAt: z.string().datetime().optional(),
     status: z.enum(['active', 'pending']).optional(),
+    walletAddress: z.string().min(42, 'Invalid wallet address').max(42, 'Invalid wallet address').optional(),
 })
 
 // Wallet validation schemas
