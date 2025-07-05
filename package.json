@@ -27,7 +27,7 @@
   "license": "MIT",
   "dependencies": {
     "@prisma/client": "^5.7.1",
-    "@privy-io/react-auth": "^1.48.0",
+    "@privy-io/react-auth": "^1.99.1",
     "@privy-io/server-auth": "^1.28.2",
     "axios": "^1.6.2",
     "bcryptjs": "^2.4.3",
@@ -56,6 +56,6 @@
     "prisma": "^5.7.1",
     "tailwindcss": "^3.3.6",
     "ts-node": "^10.9.2",
-    "typescript": "^5.3.3"
+    "typescript": "^5.8.3"
   }
 }
