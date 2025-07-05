@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { usePrivy, useLogin, useLoginWithEmail, useSendTransaction } from '@privy-io/react-auth';
+import Link from 'next/link';
 
 interface User {
   id: string;
@@ -158,6 +159,26 @@ export default function HomePage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-8">
         <h1 className="text-2xl font-bold text-indigo-600 mb-6 text-center">Bodo - Fitness Fundraising</h1>
+        
+        {/* Navigation Links */}
+        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+          <h2 className="text-lg font-semibold text-gray-800 mb-3">Quick Navigation</h2>
+          <div className="flex flex-wrap gap-2">
+            <Link 
+              href="/campaigns"
+              className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm"
+            >
+              Browse Campaigns
+            </Link>
+            <Link 
+              href="/fundraises"
+              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm"
+            >
+              View Fundraises
+            </Link>
+          </div>
+        </div>
+
         {/* Step 1: Login with Privy (email OTP) */}
         {!authenticated && (
           <>
