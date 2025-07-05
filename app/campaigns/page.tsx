@@ -290,16 +290,21 @@ export default function CampaignsPage() {
               </svg>
             </button>
             {/* Bell icon */}
-            <button
-              style={{ background: 'none', border: 'none', padding: 0, outline: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', borderRadius: 20, transition: 'background 0.15s, transform 0.15s' }}
-              className="group hover:scale-110 active:scale-95"
-              tabIndex={0}
-            >
-              {/* bell.svg */}
-              <svg width="25" height="25" viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M10.8137 21.4302C10.9892 21.7342 11.2417 21.9866 11.5457 22.1622C11.8497 22.3377 12.1946 22.4301 12.5457 22.4301C12.8967 22.4301 13.2416 22.3377 13.5456 22.1622C13.8496 21.9866 14.1021 21.7342 14.2777 21.4302M3.80766 15.7562C3.67702 15.8994 3.59081 16.0774 3.55951 16.2687C3.52821 16.46 3.55318 16.6562 3.63136 16.8336C3.70955 17.0109 3.83759 17.1617 3.99991 17.2677C4.16223 17.3736 4.35183 17.43 4.54566 17.4302H20.5457C20.7395 17.4302 20.9291 17.374 21.0915 17.2683C21.2539 17.1626 21.3822 17.0119 21.4605 16.8347C21.5389 16.6575 21.5641 16.4613 21.5331 16.27C21.502 16.0787 21.4161 15.9005 21.2857 15.7572C19.9557 14.3862 18.5457 12.9292 18.5457 8.43018C18.5457 6.83888 17.9135 5.31275 16.7883 4.18754C15.6631 3.06232 14.137 2.43018 12.5457 2.43018C10.9544 2.43018 9.42823 3.06232 8.30302 4.18754C7.1778 5.31275 6.54566 6.83888 6.54566 8.43018C6.54566 12.9292 5.13466 14.3862 3.80766 15.7562Z" stroke="#44475C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
+            <Link href="/notifications" legacyBehavior passHref>
+              <button
+                style={{ background: 'none', border: 'none', padding: 0, outline: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', borderRadius: 20, position: 'relative', transition: 'background 0.15s, transform 0.15s' }}
+                className="group hover:scale-110 active:scale-95"
+                tabIndex={0}
+                aria-label="Notifications"
+              >
+                {/* Highlight circle if on /notifications */}
+                {/* TODO: Add logic to highlight if current route is /notifications */}
+                {/* bell.svg */}
+                <svg width="25" height="25" viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10.8137 21.4302C10.9892 21.7342 11.2417 21.9866 11.5457 22.1622C11.8497 22.3377 12.1946 22.4301 12.5457 22.4301C12.8967 22.4301 13.2416 22.3377 13.5456 22.1622C13.8496 21.9866 14.1021 21.7342 14.2777 21.4302M3.80766 15.7562C3.67702 15.8994 3.59081 16.0774 3.55951 16.2687C3.52821 16.46 3.55318 16.6562 3.63136 16.8336C3.70955 17.0109 3.83759 17.1617 3.99991 17.2677C4.16223 17.3736 4.35183 17.43 4.54566 17.4302H20.5457C20.7395 17.4302 20.9291 17.374 21.0915 17.2683C21.2539 17.1626 21.3822 17.0119 21.4605 16.8347C21.5389 16.6575 21.5641 16.4613 21.5331 16.27C21.502 16.0787 21.4161 15.9005 21.2857 15.7572C19.9557 14.3862 18.5457 12.9292 18.5457 8.43018C18.5457 6.83888 17.9135 5.31275 16.7883 4.18754C15.6631 3.06232 14.137 2.43018 12.5457 2.43018C10.9544 2.43018 9.42823 3.06232 8.30302 4.18754C7.1778 5.31275 6.54566 6.83888 6.54566 8.43018C6.54566 12.9292 5.13466 14.3862 3.80766 15.7562Z" stroke="#44475C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            </Link>
             {/* User icon */}
             <button
               style={{ background: 'none', border: 'none', padding: 0, outline: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', borderRadius: 20, transition: 'background 0.15s, transform 0.15s' }}
