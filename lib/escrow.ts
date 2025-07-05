@@ -49,8 +49,15 @@ export class EscrowService {
 
     async getEscrowBalance(): Promise<string> {
         try {
-            const balance = await getProvider().getBalance(process.env.ESCROW_WALLET_ADDRESS!)
-            return ethers.formatEther(balance)
+            // USDC contract address on Sepolia testnet
+            const USDC_CONTRACT_ADDRESS = '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238';
+            
+            // USDC ABI for balanceOf function
+            const usdcAbi = ['function balanceOf(address owner) view returns (uint256)'];
+            const usdcContract = new ethers.Contract(USDC_CONTRACT_ADDRESS, usdcAbi, getProvider());
+            
+            const balance = await usdcContract.balanceOf(process.env.ESCROW_WALLET_ADDRESS!)
+            return ethers.formatUnits(balance, 6) // USDC has 6 decimals
         } catch (error) {
             console.error('Error getting escrow balance:', error)
             throw error
@@ -139,11 +146,18 @@ export class EscrowService {
                 throw new Error('Insufficient escrow balance')
             }
 
-            // Send transaction
-            const tx = await getEscrowWallet().sendTransaction({
-                to: userWallet.address,
-                value: ethers.parseEther(payoutAmount.toString()),
-            })
+            // USDC contract address on Sepolia testnet
+            const USDC_CONTRACT_ADDRESS = '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238';
+            
+            // USDC ABI for transfer function
+            const usdcAbi = ['function transfer(address to, uint256 amount) returns (bool)'];
+            const usdcContract = new ethers.Contract(USDC_CONTRACT_ADDRESS, usdcAbi, getEscrowWallet());
+            
+            // Convert payout amount to USDC (6 decimals)
+            const usdcAmount = ethers.parseUnits(payoutAmount.toString(), 6);
+            
+            // Send USDC transaction
+            const tx = await usdcContract.transfer(userWallet.address, usdcAmount)
 
             // Wait for confirmation
             const receipt = await tx.wait()

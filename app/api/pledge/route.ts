@@ -238,38 +238,65 @@ export async function PUT(request: NextRequest) {
             )
         }
 
-        // Update pledge with transaction hash
-        const updatedPledge = await prisma.pledge.update({
-            where: { id: pledgeId },
-            data: {
-                escrowTxHash,
-                status: 'pending', // Will be updated to 'active' when transaction is confirmed
-            },
-            include: {
-                fundraise: {
-                    select: {
-                        id: true,
-                        title: true,
-                        user: {
-                            select: {
-                                id: true,
-                                privyUserId: true
+        // Get the pledge details to create escrow transaction
+        const pledge = await prisma.pledge.findUnique({
+            where: { id: pledgeId }
+        })
+
+        if (!pledge) {
+            return NextResponse.json(
+                { error: 'Pledge not found' },
+                { status: 404 }
+            )
+        }
+
+        // Use a transaction to update pledge and create escrow transaction
+        const [updatedPledge, escrowTransaction] = await prisma.$transaction([
+            // Update pledge with transaction hash
+            prisma.pledge.update({
+                where: { id: pledgeId },
+                data: {
+                    escrowTxHash,
+                    status: 'pending', // Will be updated to 'active' when transaction is confirmed
+                },
+                include: {
+                    fundraise: {
+                        select: {
+                            id: true,
+                            title: true,
+                            user: {
+                                select: {
+                                    id: true,
+                                    privyUserId: true
+                                }
                             }
                         }
-                    }
-                },
-                staker: {
-                    select: {
-                        id: true,
-                        privyUserId: true
+                    },
+                    staker: {
+                        select: {
+                            id: true,
+                            privyUserId: true
+                        }
                     }
                 }
-            }
-        })
+            }),
+            // Create escrow transaction record
+            prisma.escrowTransaction.create({
+                data: {
+                    pledgeId,
+                    fromAddress: pledge.stakerWalletAddress || 'unknown',
+                    toAddress: process.env.ESCROW_WALLET_ADDRESS || 'unknown',
+                    amount: Number(pledge.totalAmountPledged),
+                    txHash: escrowTxHash,
+                    status: 'pending',
+                }
+            })
+        ])
 
         return NextResponse.json({
             message: 'Pledge updated successfully',
-            pledge: updatedPledge
+            pledge: updatedPledge,
+            escrowTransaction
         })
     } catch (error) {
         console.error('Error updating pledge:', error)

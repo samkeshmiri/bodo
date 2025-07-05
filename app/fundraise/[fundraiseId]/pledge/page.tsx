@@ -113,23 +113,48 @@ export default function PledgePage() {
       if (!user?.wallet?.address) {
         throw new Error('Please connect your wallet first');
       }
-      if (typeof window.ethereum !== 'undefined') {
-        await window.ethereum.request({ method: 'eth_requestAccounts' });
+      
+      // USDC contract address on Sepolia testnet
+      const USDC_CONTRACT_ADDRESS = '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238';
+      
+      // Convert USD amount to USDC (USDC has 6 decimals)
+      const usdcAmount = ethers.parseUnits(totalAmount, 6);
+      
+      // Escrow wallet address
+      const escrowAddress = process.env.NEXT_PUBLIC_ESCROW_ADDRESS || '0x1234567890123456789012345678901234567890';
+      
+      // Use MetaMask browser extension to transfer USDC
+      if (typeof window.ethereum === 'undefined') {
+        throw new Error('MetaMask is not installed. Please install MetaMask extension.');
       }
+      
+      // Request account access
+      await window.ethereum.request({ method: 'eth_requestAccounts' });
+      
+      // Create provider and signer
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      const escrowAddress = process.env.NEXT_PUBLIC_ESCROW_ADDRESS || '0x1234567890123456789012345678901234567890';
+      
+      // Create USDC interface
+      const usdcInterface = new ethers.Interface([
+        'function transfer(address to, uint256 amount) returns (bool)'
+      ]);
+      
+      // Send USDC transaction
       const tx = await signer.sendTransaction({
-        to: escrowAddress,
-        value: ethers.parseEther(totalAmount),
+        to: USDC_CONTRACT_ADDRESS,
+        data: usdcInterface.encodeFunctionData('transfer', [escrowAddress, usdcAmount]),
       });
+      
       const receipt = await tx.wait();
+      const hash = receipt?.hash || 'pending';
+      
       const updateRes = await fetch('/api/pledge', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           pledgeId: pledgeId,
-          escrowTxHash: receipt?.hash,
+          escrowTxHash: hash,
         }),
       });
       if (!updateRes.ok) {
