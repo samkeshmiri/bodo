@@ -10,8 +10,12 @@ export default function PrivyProviderWrapper({ children }: { children: React.Rea
   }
 
   return (
-    <PrivyProvider appId={appId}>
+    <PrivyProvider appId={appId} config={{
+        embeddedWallets: {
+          createOnLogin: 'all-users',
+        }, 
+    }}>
       {children}
     </PrivyProvider>
   );
-} 
+}

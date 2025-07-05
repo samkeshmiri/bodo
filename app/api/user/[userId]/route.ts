@@ -97,13 +97,16 @@ export async function PUT(
         const validatedParams = uuidSchema.parse(params.userId)
         const updateData = await validateRequest(updateUserSchema, request)
 
+        // Remove walletAddress from user update fields
+        const { walletAddress, ...userUpdateFields } = updateData;
+
         const user = await prisma.user.update({
             where: { id: validatedParams },
-            data: updateData
+            data: userUpdateFields
         })
 
         // Upsert wallet if walletAddress is present
-        if (updateData.walletAddress) {
+        if (walletAddress) {
             await prisma.wallet.upsert({
                 where: {
                     userId_provider: {
@@ -112,14 +115,14 @@ export async function PUT(
                     }
                 },
                 update: {
-                    address: updateData.walletAddress,
+                    address: walletAddress,
                     status: 'active',
                     provider: 'privy',
                     userId: user.id
                 },
                 create: {
                     userId: user.id,
-                    address: updateData.walletAddress,
+                    address: walletAddress,
                     provider: 'privy',
                     status: 'active'
                 }
