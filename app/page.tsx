@@ -32,7 +32,6 @@ export default function HomePage() {
   const [authError, setAuthError] = useState("");
   const [user, setUser] = useState<User | null>(null);
   const { sendTransaction } = useSendTransaction();
-  const [txStatus, setTxStatus] = useState<string | null>(null);
   const [stravaConnected, setStravaConnected] = useState(false);
   const [fundraise, setFundraise] = useState<Fundraise | null>(null);
   const [fundraiseError, setFundraiseError] = useState('');
@@ -74,9 +73,12 @@ export default function HomePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authenticated, privyUser?.id]);
 
-  // Step 2: Simulate Strava Connect
+  // Step 2: Connect Strava
   function handleConnectStrava() {
-    setStravaConnected(true);
+    const clientId = process.env.NEXT_PUBLIC_STRAVA_CLIENT_ID;
+    const redirectUri = `${window.location.origin}/strava/callback`;
+    const stravaAuthUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&approval_prompt=auto&scope=activity:read`;
+    window.location.href = stravaAuthUrl;
   }
 
   // Step 3: Create Fundraise
@@ -89,7 +91,8 @@ export default function HomePage() {
     const title = (form.elements.namedItem('title') as HTMLInputElement).value;
     const description = (form.elements.namedItem('description') as HTMLTextAreaElement).value;
     const targetAmount = (form.elements.namedItem('targetAmount') as HTMLInputElement).value;
-    const deadline = (form.elements.namedItem('deadline') as HTMLInputElement).value;
+    const deadlineDate = (form.elements.namedItem('deadline') as HTMLInputElement).value;
+    const deadline = new Date(deadlineDate).toISOString();
     try {
       if (!user) throw new Error('User not found');
       const res = await fetch('/api/fundraise', {
@@ -131,20 +134,6 @@ export default function HomePage() {
       setStep('loggedIn');
     } catch (err: any) {
       setAuthError(err.message || 'Failed to log in');
-    }
-  };
-
-  // Handle send transaction
-  const handleSendTransaction = async () => {
-    setTxStatus(null);
-    try {
-      const tx = await sendTransaction({
-        to: '0xE3070d3e4309afA3bC9a6b057685743CF42da77C', // Example address
-        value: 100000 // in wei (0.0001 ETH)
-      });
-      setTxStatus(`Transaction sent! Hash: ${tx.transactionHash}`);
-    } catch (err: any) {
-      setTxStatus(err.message || 'Failed to send transaction');
     }
   };
 
@@ -202,14 +191,6 @@ export default function HomePage() {
           <div className="flex flex-col items-center space-y-4">
             <div className="text-green-600 font-medium">Logged in as: {user?.privyUserId || user?.id}</div>
             <button onClick={logout} className="text-xs text-red-500 underline mb-2">Logout</button>
-            <button
-              className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 disabled:opacity-50"
-              onClick={handleSendTransaction}
-              disabled={loading}
-            >
-              {loading ? 'Sending Transaction...' : 'Send Test Transaction'}
-            </button>
-            {txStatus && <div className="text-blue-600 text-sm mt-2 break-all">{txStatus}</div>}
           </div>
         )}
         {/* Step 1b: Backend User Creation/Fetch */}
@@ -217,7 +198,7 @@ export default function HomePage() {
           <div className="text-gray-500 text-center">Syncing user...</div>
         )}
         {/* Step 2: Connect Strava */}
-        {user && !stravaConnected && (
+        {user && !user.stravaId && (
           <div className="flex flex-col items-center space-y-4">
             <div className="text-green-600 font-medium">User ready: {user.privyUserId}</div>
             <button onClick={handleConnectStrava} className="w-full bg-orange-500 text-white py-2 rounded hover:bg-orange-600">
@@ -225,8 +206,13 @@ export default function HomePage() {
             </button>
           </div>
         )}
+        {user && user.stravaId && (
+          <div className="flex flex-col items-center space-y-4">
+            <div className="text-green-600 font-medium">✅ Strava Connected!</div>
+          </div>
+        )}
         {/* Step 3: Create Fundraise */}
-        {user && stravaConnected && !fundraise && (
+        {user && user.stravaId && !fundraise && (
           <form onSubmit={handleCreateFundraise} className="space-y-4 mt-4">
             <div className="text-green-600 font-medium">Strava connected!</div>
             <div>

@@ -81,9 +81,8 @@ export async function POST(request: NextRequest) {
     try {
         const body = await validateRequest(createFundraiseSchema, request)
 
-        // For now, we'll get userId from the request body
-        // In a real app, this would come from authentication middleware
-        const { userId } = await request.json()
+        // Use userId from the validated body
+        const { userId } = body;
 
         if (!userId) {
             return NextResponse.json(
