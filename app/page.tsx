@@ -23,6 +23,9 @@ interface Fundraise {
 }
 
 export default function HomePage() {
+  // Check if Privy is available (not during build)
+  const isPrivyAvailable = typeof window !== 'undefined' && process.env.NEXT_PUBLIC_PRIVY_APP_ID && process.env.NEXT_PUBLIC_PRIVY_APP_ID !== 'dummy';
+  
   const { ready, authenticated, logout, user: privyUser } = usePrivy();
   const { login } = useLogin();
   const { sendCode, loginWithCode } = useLoginWithEmail();
@@ -36,6 +39,20 @@ export default function HomePage() {
   const [fundraise, setFundraise] = useState<Fundraise | null>(null);
   const [fundraiseError, setFundraiseError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // If Privy is not available, show a message
+  if (!isPrivyAvailable) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-md bg-white rounded-lg shadow-lg p-8">
+          <h1 className="text-2xl font-bold text-indigo-600 mb-6 text-center">Bodo - Fitness Fundraising</h1>
+          <p className="text-gray-600 text-center">
+            Privy authentication is not configured. Please set up your environment variables.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // On Privy login, create or fetch backend user
   useEffect(() => {

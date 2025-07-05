@@ -30,6 +30,10 @@ sudo npm install -g pm2
 echo -e "${YELLOW}📦 Installing nginx...${NC}"
 sudo apt install -y nginx
 
+# Install certbot
+echo -e "${YELLOW}📦 Installing certbot...${NC}"
+sudo apt install -y certbot python3-certbot-nginx
+
 # Create application directory
 echo -e "${YELLOW}📁 Creating application directory...${NC}"
 mkdir -p $HOME/bodo
@@ -45,7 +49,16 @@ echo -e "${YELLOW}🔧 Setting up nginx configuration...${NC}"
 sudo tee /etc/nginx/sites-available/bodo << EOF
 server {
     listen 80;
-    server_name 154.42.7.63;  # Replace with your domain
+    server_name bodoo.xyz www.bodoo.xyz;
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name bodoo.xyz www.bodoo.xyz;
+
+    ssl_certificate /etc/letsencrypt/live/bodoo.xyz/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/bodoo.xyz/privkey.pem;
 
     location / {
         proxy_pass http://localhost:3000;
@@ -82,6 +95,10 @@ if command -v ufw &> /dev/null; then
     sudo ufw allow 'Nginx Full'
     sudo ufw --force enable
 fi
+
+# Request SSL certificate
+echo -e "${YELLOW}🔧 Requesting SSL certificate...${NC}"
+sudo certbot --nginx -d bodoo.xyz -d www.bodoo.xyz --non-interactive --agree-tos -m admin@bodoo.xyz --redirect
 
 echo -e "${GREEN}✅ Server setup completed!${NC}"
 echo -e "${YELLOW}📝 Next steps:${NC}"

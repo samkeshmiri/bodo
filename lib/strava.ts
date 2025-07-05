@@ -17,125 +17,143 @@ export interface StravaActivity {
     name: string;
 }
 
-export async function exchangeStravaCode(code: string): Promise<StravaTokens> {
-    try {
-        const response = await axios.post('https://www.strava.com/oauth/token', {
+// Lazy-load Strava client to avoid build-time initialization
+let stravaClient: any = null;
+
+function getStravaClient() {
+    if (!stravaClient) {
+        if (!process.env.STRAVA_CLIENT_ID || !process.env.STRAVA_CLIENT_SECRET) {
+            throw new Error('STRAVA_CLIENT_ID and STRAVA_CLIENT_SECRET environment variables are required');
+        }
+        // Initialize Strava client here when needed
+        stravaClient = {
             client_id: process.env.STRAVA_CLIENT_ID,
             client_secret: process.env.STRAVA_CLIENT_SECRET,
-            code,
-            grant_type: 'authorization_code',
-        });
-
-        return response.data;
-    } catch (error) {
-        console.error('Error exchanging Strava code:', error);
-        throw error;
+        };
     }
+    return stravaClient;
 }
 
-export async function refreshStravaToken(refreshToken: string): Promise<StravaTokens> {
-    try {
-        const response = await axios.post('https://www.strava.com/oauth/token', {
-            client_id: process.env.STRAVA_CLIENT_ID,
-            client_secret: process.env.STRAVA_CLIENT_SECRET,
+export async function getStravaAuthUrl(redirectUri: string): Promise<string> {
+    const client = getStravaClient();
+    const authUrl = `https://www.strava.com/oauth/authorize?client_id=${client.client_id}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=read,activity:read_all`;
+    return authUrl;
+}
+
+export async function exchangeStravaCode(code: string, redirectUri: string): Promise<any> {
+    const client = getStravaClient();
+    const response = await fetch('https://www.strava.com/oauth/token', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            client_id: client.client_id,
+            client_secret: client.client_secret,
+            code,
+            grant_type: 'authorization_code',
+        }),
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to exchange Strava code for token');
+    }
+
+    return response.json();
+}
+
+export async function refreshStravaToken(refreshToken: string): Promise<any> {
+    const client = getStravaClient();
+    const response = await fetch('https://www.strava.com/oauth/token', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            client_id: client.client_id,
+            client_secret: client.client_secret,
             refresh_token: refreshToken,
             grant_type: 'refresh_token',
-        });
+        }),
+    });
 
-        return response.data;
-    } catch (error) {
-        console.error('Error refreshing Strava token:', error);
-        throw error;
+    if (!response.ok) {
+        throw new Error('Failed to refresh Strava token');
     }
+
+    return response.json();
 }
 
 export async function getStravaUser(accessToken: string): Promise<any> {
-    try {
-        const response = await axios.get(`${STRAVA_API_BASE}/athlete`, {
-            headers: {
-                Authorization: `Bearer ${accessToken}`,
-            },
-        });
+    const response = await fetch('https://www.strava.com/api/v3/athlete', {
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+        },
+    });
 
-        return response.data;
-    } catch (error) {
-        console.error('Error getting Strava user:', error);
-        throw error;
+    if (!response.ok) {
+        throw new Error('Failed to fetch Strava user');
     }
+
+    return response.json();
 }
 
-export async function getStravaActivities(accessToken: string, after?: number): Promise<StravaActivity[]> {
-    try {
-        const params: any = { per_page: 200 };
-        if (after) {
-            params.after = after;
+export async function getStravaActivities(accessToken: string, page: number = 1, perPage: number = 30): Promise<any> {
+    const response = await fetch(
+        `https://www.strava.com/api/v3/athlete/activities?page=${page}&per_page=${perPage}`,
+        {
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+            },
         }
+    );
 
-        const response = await axios.get(`${STRAVA_API_BASE}/athlete/activities`, {
-            headers: {
-                Authorization: `Bearer ${accessToken}`,
-            },
-            params,
-        });
-
-        return response.data;
-    } catch (error) {
-        console.error('Error getting Strava activities:', error);
-        throw error;
+    if (!response.ok) {
+        throw new Error('Failed to fetch Strava activities');
     }
+
+    return response.json();
 }
 
-export async function updateUserStravaTokens(
-    userId: string,
-    accessToken: string,
-    refreshToken: string,
-    expiresAt: number
-): Promise<void> {
-    try {
-        await prisma.user.update({
-            where: { id: userId },
-            data: {
-                stravaAccessToken: accessToken, // Ensure type matches schema
-                stravaRefreshToken: refreshToken,
-                stravaTokenExpiresAt: new Date(expiresAt * 1000),
-                status: 'active',
-            } as any, // Cast to any to bypass type error if fields are missing in Prisma schema
-        });
-    } catch (error) {
-        console.error('Error updating user Strava tokens:', error);
-        throw error;
-    }
-}
-
-export async function syncStravaActivities(userId: string): Promise<void> {
+export async function syncUserStravaActivities(userId: string): Promise<void> {
     try {
         const user = await prisma.user.findUnique({
             where: { id: userId },
         });
 
-        if (!user || !user.stravaAccessToken) {
-            throw new Error('User not found or Strava not connected');
+        if (!user?.stravaAccessToken) {
+            throw new Error('User has no Strava access token');
         }
 
-        // Check if token needs refresh
-        let accessToken = user.stravaAccessToken;
+        // Check if token is expired
         if (user.stravaTokenExpiresAt && user.stravaTokenExpiresAt < new Date()) {
-            const tokens = await refreshStravaToken(user.stravaRefreshToken!);
-            await updateUserStravaTokens(userId, tokens.access_token, tokens.refresh_token, tokens.expires_at);
-            accessToken = tokens.access_token;
+            if (!user.stravaRefreshToken) {
+                throw new Error('Token expired and no refresh token available');
+            }
+
+            // Refresh token
+            const tokenData = await refreshStravaToken(user.stravaRefreshToken);
+            
+            await prisma.user.update({
+                where: { id: userId },
+                data: {
+                    stravaAccessToken: tokenData.access_token,
+                    stravaRefreshToken: tokenData.refresh_token,
+                    stravaTokenExpiresAt: new Date(Date.now() + tokenData.expires_in * 1000),
+                },
+            });
         }
 
-        // Get recent activities (last 7 days)
-        const after = Math.floor((Date.now() - 7 * 24 * 60 * 60 * 1000) / 1000);
-        const activities = await getStravaActivities(accessToken, after);
+        // Get recent activities
+        const activities = await getStravaActivities(user.stravaAccessToken);
 
-        // Process each activity
+        // Process activities
         for (const activity of activities) {
             // Check if activity already exists
             const existingActivity = await prisma.activity.findFirst({
                 where: {
-                    fundraiserUserId: userId,
                     externalActivityId: activity.id.toString(),
+                    source: 'Strava',
                 },
             });
 
@@ -144,8 +162,8 @@ export async function syncStravaActivities(userId: string): Promise<void> {
                 await prisma.activity.create({
                     data: {
                         fundraiserUserId: userId,
-                        distance: activity.distance / 1000, // Convert to kilometers
-                        source: 'strava',
+                        distance: activity.distance / 1000, // Convert meters to kilometers
+                        source: 'Strava',
                         externalActivityId: activity.id.toString(),
                         activityDate: new Date(activity.start_date),
                     },

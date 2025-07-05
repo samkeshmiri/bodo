@@ -1,7 +1,18 @@
 import { PrivyClient } from '@privy-io/server-auth';
 import { prisma } from './prisma';
 
-const privy = new PrivyClient(process.env.PRIVY_APP_ID!, process.env.PRIVY_APP_SECRET!);
+// Lazy-load PrivyClient to avoid build-time initialization
+let privy: PrivyClient | null = null;
+
+function getPrivyClient(): PrivyClient {
+    if (!privy) {
+        if (!process.env.PRIVY_APP_ID || !process.env.PRIVY_APP_SECRET) {
+            throw new Error('PRIVY_APP_ID and PRIVY_APP_SECRET environment variables are required');
+        }
+        privy = new PrivyClient(process.env.PRIVY_APP_ID, process.env.PRIVY_APP_SECRET);
+    }
+    return privy;
+}
 
 export interface PrivyUser {
     id: string;
@@ -14,11 +25,10 @@ export interface PrivyUser {
 
 export async function verifyPrivyToken(token: string): Promise<PrivyUser | null> {
     try {
-        const verifiedClaims = await privy.verifyAuthToken(token);
-        const claims = verifiedClaims as any; // Cast to any to handle type mismatches
+        const claims = await getPrivyClient().verifyAuthToken(token) as any;
         return {
-            id: claims.userId,
-            email: claims.email?.address,
+            id: claims.userId || claims.id,
+            email: claims.email?.address || claims.email,
             wallet: claims.wallet ? {
                 address: claims.wallet.address,
                 chainId: claims.wallet.chainId,
