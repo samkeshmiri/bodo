@@ -1,7 +1,7 @@
 import { PrivyClient } from '@privy-io/server-auth';
 import { prisma } from './prisma';
 
-const privy = new PrivyClient(process.env.PRIVY_APP_SECRET!, process.env.PRIVY_APP_ID!);
+const privy = new PrivyClient(process.env.PRIVY_APP_ID!, process.env.PRIVY_APP_SECRET!);
 
 export interface PrivyUser {
     id: string;
@@ -15,12 +15,13 @@ export interface PrivyUser {
 export async function verifyPrivyToken(token: string): Promise<PrivyUser | null> {
     try {
         const verifiedClaims = await privy.verifyAuthToken(token);
+        const claims = verifiedClaims as any; // Cast to any to handle type mismatches
         return {
-            id: verifiedClaims.userId,
-            email: verifiedClaims.email?.address,
-            wallet: verifiedClaims.wallet ? {
-                address: verifiedClaims.wallet.address,
-                chainId: verifiedClaims.wallet.chainId,
+            id: claims.userId,
+            email: claims.email?.address,
+            wallet: claims.wallet ? {
+                address: claims.wallet.address,
+                chainId: claims.wallet.chainId,
             } : undefined,
         };
     } catch (error) {

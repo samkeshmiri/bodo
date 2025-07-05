@@ -4,13 +4,16 @@ import { NextRequest } from 'next/server'
 // User validation schemas
 export const createUserSchema = z.object({
     privyUserId: z.string().min(1, 'Privy user ID is required'),
+    stravaId: z.string().optional(),
+    status: z.string().optional(),
 })
 
-export const updateUserStravaSchema = z.object({
-    stravaId: z.string().min(1, 'Strava ID is required'),
-    stravaAccessToken: z.string().min(1, 'Strava access token is required'),
-    stravaRefreshToken: z.string().min(1, 'Strava refresh token is required'),
-    stravaTokenExpiresAt: z.string().datetime(),
+export const updateUserSchema = z.object({
+    stravaId: z.string().optional(),
+    stravaAccessToken: z.string().optional(),
+    stravaRefreshToken: z.string().optional(),
+    stravaTokenExpiresAt: z.string().datetime().optional(),
+    status: z.enum(['active', 'pending']).optional(),
 })
 
 // Wallet validation schemas
@@ -94,10 +97,10 @@ export const stravaWebhookSchema = z.object({
     object_type: z.string(),
     object_id: z.number(),
     aspect_type: z.string(),
-    updates: z.record(z.any()).optional(),
     owner_id: z.number(),
     subscription_id: z.number(),
     event_time: z.number(),
+    updates: z.record(z.any()).optional(),
 })
 
 // Strava OAuth validation

@@ -51,7 +51,8 @@ export async function POST(request: NextRequest) {
                 fundraiserUserId,
                 distance: body.distance,
                 source: body.source,
-                externalActivityId: body.externalActivityId
+                externalActivityId: body.externalActivityId,
+                activityDate: body.activityDate || new Date().toISOString(),
             }
         })
 
@@ -88,4 +89,4 @@ export async function POST(request: NextRequest) {
             { status: 500 }
         )
     }
-} 
+}

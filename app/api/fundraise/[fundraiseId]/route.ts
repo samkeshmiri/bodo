@@ -84,9 +84,9 @@ export async function PUT(
         const updateData = await validateRequest(updateFundraiseSchema, request)
 
         // Convert deadline string to Date if provided
-        if (updateData.deadline) {
-            updateData.deadline = new Date(updateData.deadline)
-        }
+        // if (updateData.deadline) {
+        //     updateData.deadline = new Date(updateData.deadline)
+        // }
 
         const fundraise = await prisma.fundraise.update({
             where: { id: validatedParams },

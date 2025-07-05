@@ -79,7 +79,8 @@ async function main() {
             description: 'Running a marathon to raise funds for cancer research',
             targetAmount: 1000,
             deadline: new Date('2024-12-31'),
-            status: 'active'
+            status: 'active',
+            shareableLink: 'marathon-cancer-' + Math.random().toString(36).substring(2, 10),
         }
     })
 
@@ -90,7 +91,8 @@ async function main() {
             description: 'Cycling 100km to support local charities',
             targetAmount: 500,
             deadline: new Date('2024-11-30'),
-            status: 'active'
+            status: 'active',
+            shareableLink: 'cycling-challenge-' + Math.random().toString(36).substring(2, 10),
         }
     })
 
@@ -141,7 +143,8 @@ async function main() {
             fundraiserUserId: user1.id,
             distance: 5.2,
             source: 'Strava',
-            externalActivityId: 'strava_activity_1'
+            externalActivityId: 'strava_activity_1',
+            activityDate: new Date('2024-06-01T09:00:00Z'),
         }
     })
 
@@ -150,7 +153,8 @@ async function main() {
             fundraiserUserId: user2.id,
             distance: 15.8,
             source: 'Strava',
-            externalActivityId: 'strava_activity_2'
+            externalActivityId: 'strava_activity_2',
+            activityDate: new Date('2024-06-02T10:00:00Z'),
         }
     })
 
