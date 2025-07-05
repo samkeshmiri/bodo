@@ -1,9 +1,29 @@
 import { ethers } from 'ethers'
 import { prisma } from './prisma'
 
-// Initialize provider and escrow wallet
-const provider = new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_RPC_URL)
-const escrowWallet = new ethers.Wallet(process.env.ESCROW_WALLET_PRIVATE_KEY!, provider)
+// Lazy-load provider and escrow wallet to avoid build-time initialization
+let provider: ethers.JsonRpcProvider | null = null
+let escrowWallet: ethers.Wallet | null = null
+
+function getProvider(): ethers.JsonRpcProvider {
+    if (!provider) {
+        if (!process.env.NEXT_PUBLIC_RPC_URL) {
+            throw new Error('NEXT_PUBLIC_RPC_URL environment variable is required')
+        }
+        provider = new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_RPC_URL)
+    }
+    return provider
+}
+
+function getEscrowWallet(): ethers.Wallet {
+    if (!escrowWallet) {
+        if (!process.env.ESCROW_WALLET_PRIVATE_KEY) {
+            throw new Error('ESCROW_WALLET_PRIVATE_KEY environment variable is required')
+        }
+        escrowWallet = new ethers.Wallet(process.env.ESCROW_WALLET_PRIVATE_KEY, getProvider())
+    }
+    return escrowWallet
+}
 
 export interface EscrowTransaction {
     id: string
@@ -29,7 +49,7 @@ export class EscrowService {
 
     async getEscrowBalance(): Promise<string> {
         try {
-            const balance = await provider.getBalance(process.env.ESCROW_WALLET_ADDRESS!)
+            const balance = await getProvider().getBalance(process.env.ESCROW_WALLET_ADDRESS!)
             return ethers.formatEther(balance)
         } catch (error) {
             console.error('Error getting escrow balance:', error)
@@ -55,7 +75,7 @@ export class EscrowService {
 
     private async checkTransactionStatus(escrowTx: any): Promise<void> {
         try {
-            const receipt = await provider.getTransactionReceipt(escrowTx.txHash)
+            const receipt = await getProvider().getTransactionReceipt(escrowTx.txHash)
 
             if (receipt) {
                 const status = receipt.status === 1 ? 'confirmed' : 'failed'
@@ -120,7 +140,7 @@ export class EscrowService {
             }
 
             // Send transaction
-            const tx = await escrowWallet.sendTransaction({
+            const tx = await getEscrowWallet().sendTransaction({
                 to: userWallet.address,
                 value: ethers.parseEther(payoutAmount.toString()),
             })
