@@ -1,23 +1,76 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { validateRequest, stravaWebhookSchema } from '@/lib/validations'
 import { escrowService } from '@/lib/escrow'
-import { getStravaUser, getStravaActivities, refreshStravaToken } from '@/lib/strava'
+import { prisma } from '@/lib/prisma'
+import { getStravaActivities, refreshStravaToken, verifyStravaWebhook } from '@/lib/strava'
+import { stravaWebhookSchema } from '@/lib/validations'
+import { NextRequest, NextResponse } from 'next/server'
+
+export async function GET(request: NextRequest) {
+    try {
+        // Strava sends a GET request to verify the webhook endpoint
+        const { searchParams } = new URL(request.url)
+        const mode = searchParams.get('hub.mode')
+        const token = searchParams.get('hub.verify_token')
+        const challenge = searchParams.get('hub.challenge')
+
+        console.log('🔍 Strava webhook verification request:', { mode, token, challenge })
+
+        // Check if this is a webhook verification request
+        if (mode === 'subscribe' && token && challenge) {
+            const webhookSecret = process.env.STRAVA_WEBHOOK_SECRET
+
+            if (token === webhookSecret) {
+                console.log('✅ Webhook verification successful')
+                // Return the challenge as JSON, as required by Strava
+                return NextResponse.json({ "hub.challenge": challenge }, { status: 200 })
+            } else {
+                console.error('❌ Invalid verify token')
+                return NextResponse.json(
+                    { error: 'Invalid verify token' },
+                    { status: 403 }
+                )
+            }
+        }
+
+        // If not a verification request, return 404
+        return NextResponse.json(
+            { error: 'Not found' },
+            { status: 404 }
+        )
+
+    } catch (error) {
+        console.error('❌ Error in webhook verification:', error)
+        return NextResponse.json(
+            { error: 'Internal server error' },
+            { status: 500 }
+        )
+    }
+}
 
 export async function POST(request: NextRequest) {
     try {
-        // Verify webhook signature (in production, implement proper verification)
+        // Get the raw body for signature verification
+        const rawBody = await request.text()
+
+        // Verify webhook signature
         const signature = request.headers.get('x-hub-signature')
         if (!signature) {
+            console.error('❌ Missing webhook signature')
             return NextResponse.json(
                 { error: 'Missing webhook signature' },
                 { status: 401 }
             )
         }
 
+        if (!verifyStravaWebhook(rawBody, signature)) {
+            console.error('❌ Invalid webhook signature')
+            return NextResponse.json(
+                { error: 'Invalid webhook signature' },
+                { status: 401 }
+            )
+        }
+
         // Parse and validate webhook payload
-        const body = await request.json()
-        const validatedData = stravaWebhookSchema.parse(body)
+        const validatedData = stravaWebhookSchema.parse(JSON.parse(rawBody))
 
         console.log('📨 Strava webhook received:', {
             objectType: validatedData.object_type,

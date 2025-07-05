@@ -177,7 +177,24 @@ export async function syncUserStravaActivities(userId: string): Promise<void> {
 }
 
 export function verifyStravaWebhook(body: string, signature: string): boolean {
-    // In production, you should verify the webhook signature
-    // For now, we'll just check if the signature exists
-    return signature.length > 0;
+    // Strava webhook verification
+    // The signature format is: sha256=hash
+    if (!signature || !signature.startsWith('sha256=')) {
+        return false;
+    }
+
+    const webhookSecret = process.env.STRAVA_WEBHOOK_SECRET;
+    if (!webhookSecret) {
+        console.warn('STRAVA_WEBHOOK_SECRET not set, skipping verification');
+        return true; // Allow in development
+    }
+
+    // Create HMAC SHA256 hash
+    const crypto = require('crypto');
+    const expectedSignature = 'sha256=' + crypto
+        .createHmac('sha256', webhookSecret)
+        .update(body)
+        .digest('hex');
+
+    return signature === expectedSignature;
 } 
