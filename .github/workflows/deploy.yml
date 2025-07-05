@@ -12,6 +12,14 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
+    - name: Debug variables
+      run: |
+        echo "Checking server connection variables..."
+        echo "SERVER_HOST: ${{ vars.SERVER_HOST }}"
+        echo "SERVER_USERNAME: ${{ vars.SERVER_USERNAME }}"
+        echo "SERVER_PORT: ${{ vars.SERVER_PORT }}"
+        echo "SSH_KEY exists: ${{ secrets.SERVER_SSH_KEY != '' && 'YES' || 'NO' }}"
+        
     - name: Deploy to server
       uses: appleboy/ssh-action@v1.0.3
       with:
@@ -20,7 +28,11 @@ jobs:
         key: ${{ secrets.SERVER_SSH_KEY }}
         port: ${{ vars.SERVER_PORT }}
         script: |
+          echo "Connected to server successfully!"
+          echo "Current directory: $(pwd)"
+          echo "Server hostname: $(hostname)"
           cd /var/www/bodo
+          echo "Changed to app directory: $(pwd)"
           git pull origin main
           npm ci
           npm run db:generate
