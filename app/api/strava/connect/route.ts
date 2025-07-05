@@ -4,13 +4,13 @@ import { exchangeStravaCode, getStravaUser } from '@/lib/strava';
 
 export async function POST(request: NextRequest) {
     try {
-        const { code, privyUserId } = await request.json();
-        if (!code || !privyUserId) {
-            return NextResponse.json({ error: 'Missing code or user ID' }, { status: 400 });
+        const { code, privyUserId, redirectUri } = await request.json();
+        if (!code || !privyUserId || !redirectUri) {
+            return NextResponse.json({ error: 'Missing code, user ID, or redirect URI' }, { status: 400 });
         }
 
         // Exchange code for tokens
-        const tokens = await exchangeStravaCode(code);
+        const tokens = await exchangeStravaCode(code, redirectUri);
         if (!tokens.access_token) {
             return NextResponse.json({ error: 'Failed to get Strava access token' }, { status: 400 });
         }
