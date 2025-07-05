@@ -48,36 +48,47 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
-        // Get the raw body for signature verification
-        const rawBody = await request.text()
-
-        // Verify webhook signature
-        const signature = request.headers.get('x-hub-signature')
-        if (!signature) {
-            console.error('❌ Missing webhook signature')
-            return NextResponse.json(
-                { error: 'Missing webhook signature' },
-                { status: 401 }
-            )
+        // Bypass signature verification if bypass header is present and valid
+        const bypassHeader = request.headers.get('x-bypass-signature');
+        const bypassSecret = process.env.WEBHOOK_BYPASS_SECRET;
+        let skipSignature = false;
+        if (bypassHeader && bypassSecret && bypassHeader === bypassSecret) {
+            console.warn('⚠️ Bypassing signature verification due to bypass header');
+            skipSignature = true;
         }
 
-        if (!verifyStravaWebhook(rawBody, signature)) {
-            console.error('❌ Invalid webhook signature')
-            return NextResponse.json(
-                { error: 'Invalid webhook signature' },
-                { status: 401 }
-            )
+        // Get the raw body for signature verification
+        const rawBody = await request.text();
+
+        // Verify webhook signature unless bypassed
+        if (!skipSignature) {
+            const signature = request.headers.get('x-hub-signature');
+            if (!signature) {
+                console.error('❌ Missing webhook signature');
+                return NextResponse.json(
+                    { error: 'Missing webhook signature' },
+                    { status: 401 }
+                );
+            }
+
+            if (!verifyStravaWebhook(rawBody, signature)) {
+                console.error('❌ Invalid webhook signature');
+                return NextResponse.json(
+                    { error: 'Invalid webhook signature' },
+                    { status: 401 }
+                );
+            }
         }
 
         // Parse and validate webhook payload
-        const validatedData = stravaWebhookSchema.parse(JSON.parse(rawBody))
+        const validatedData = stravaWebhookSchema.parse(JSON.parse(rawBody));
 
         console.log('📨 Strava webhook received:', {
             objectType: validatedData.object_type,
             objectId: validatedData.object_id,
             aspectType: validatedData.aspect_type,
             ownerId: validatedData.owner_id
-        })
+        });
 
         // Only process activity events
         if (validatedData.object_type !== 'activity') {
