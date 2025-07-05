@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import FundraisesClient from './FundraisesClient';
 import { prisma } from '@/lib/prisma'
 
 async function getFundraises() {
@@ -44,6 +44,7 @@ async function getFundraises() {
   }
 }
 
-export default function FundraisesPage() {
-  return null;
+export default async function FundraisesPage() {
+  const fundraises = await getFundraises();
+  return <FundraisesClient fundraises={fundraises} />;
 } 

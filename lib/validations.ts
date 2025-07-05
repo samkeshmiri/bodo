@@ -45,7 +45,6 @@ export const createPledgeSchema = z.object({
     fundraiseId: z.string().uuid('Invalid fundraise ID'),
     stakerUserId: z.string().uuid('Invalid user ID').optional(),
     stakerWalletAddress: z.string().min(42, 'Invalid wallet address').max(42, 'Invalid wallet address').optional(),
-    stakerEmail: z.string().email('Invalid email').optional(),
     perKmRate: z.number().positive('Per km rate must be positive'),
     totalAmountPledged: z.number().positive('Total amount must be positive'),
 })
@@ -112,7 +111,7 @@ export const stravaAuthSchema = z.object({
 // Anonymous pledge form validation
 export const anonymousPledgeSchema = z.object({
     fundraiseId: z.string().uuid('Invalid fundraise ID'),
-    stakerEmail: z.string().email('Valid email is required'),
+    stakerWalletAddress: z.string().min(42, 'Invalid wallet address').max(42, 'Invalid wallet address'),
     perKmRate: z.number().positive('Per km rate must be positive'),
     totalAmountPledged: z.number().positive('Total amount must be positive'),
 })

@@ -68,15 +68,16 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
-        const body = await validateRequest(createPledgeSchema, request)
+        // Only call request.json() once
+        const rawBody = await request.json();
+        const body = createPledgeSchema.parse(rawBody);
 
-        // For now, we'll get stakerUserId from the request body
-        // In a real app, this would come from authentication middleware
-        const { stakerUserId } = await request.json()
+        const { stakerUserId, stakerWalletAddress } = body;
 
-        if (!stakerUserId) {
+        // Validate that we have either stakerUserId (authenticated) or stakerWalletAddress (anonymous)
+        if (!stakerUserId && !stakerWalletAddress) {
             return NextResponse.json(
-                { error: 'Staker user ID is required' },
+                { error: 'Either stakerUserId (authenticated) or stakerWalletAddress (anonymous) is required' },
                 { status: 400 }
             )
         }
@@ -108,20 +109,22 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        // Check if staker exists
-        const staker = await prisma.user.findUnique({
-            where: { id: stakerUserId }
-        })
+        // If stakerUserId is provided, check if staker exists
+        if (stakerUserId) {
+            const staker = await prisma.user.findUnique({
+                where: { id: stakerUserId }
+            })
 
-        if (!staker) {
-            return NextResponse.json(
-                { error: 'Staker not found' },
-                { status: 404 }
-            )
+            if (!staker) {
+                return NextResponse.json(
+                    { error: 'Staker not found' },
+                    { status: 404 }
+                )
+            }
         }
 
         // Check if staker is trying to pledge to their own fundraise
-        if (fundraise.userId === stakerUserId) {
+        if (stakerUserId && fundraise.userId === stakerUserId) {
             return NextResponse.json(
                 { error: 'Cannot pledge to your own fundraise' },
                 { status: 400 }
@@ -129,12 +132,19 @@ export async function POST(request: NextRequest) {
         }
 
         // Check if staker already has an active pledge for this fundraise
+        const existingPledgeWhere: any = {
+            fundraiseId: body.fundraiseId,
+            status: 'active'
+        }
+
+        if (stakerUserId) {
+            existingPledgeWhere.stakerUserId = stakerUserId
+        } else {
+            existingPledgeWhere.stakerWalletAddress = stakerWalletAddress
+        }
+
         const existingPledge = await prisma.pledge.findFirst({
-            where: {
-                fundraiseId: body.fundraiseId,
-                stakerUserId,
-                status: 'active'
-            }
+            where: existingPledgeWhere
         })
 
         if (existingPledge) {
@@ -145,14 +155,21 @@ export async function POST(request: NextRequest) {
         }
 
         // Create new pledge
+        const pledgeData: any = {
+            fundraiseId: body.fundraiseId,
+            perKmRate: body.perKmRate,
+            totalAmountPledged: body.totalAmountPledged,
+            amountRemaining: body.totalAmountPledged
+        }
+
+        if (stakerUserId) {
+            pledgeData.stakerUserId = stakerUserId
+        } else {
+            pledgeData.stakerWalletAddress = stakerWalletAddress
+        }
+
         const pledge = await prisma.pledge.create({
-            data: {
-                fundraiseId: body.fundraiseId,
-                stakerUserId,
-                perKmRate: body.perKmRate,
-                totalAmountPledged: body.totalAmountPledged,
-                amountRemaining: body.totalAmountPledged
-            },
+            data: pledgeData,
             include: {
                 fundraise: {
                     select: {
@@ -201,11 +218,64 @@ export async function POST(request: NextRequest) {
                 { status: 400 }
             )
         }
-
         console.error('Error creating pledge:', error)
         return NextResponse.json(
             { error: 'Internal server error' },
             { status: 500 }
         )
     }
-} 
+}
+
+export async function PUT(request: NextRequest) {
+    try {
+        const body = await request.json()
+        const { pledgeId, escrowTxHash } = body
+
+        if (!pledgeId || !escrowTxHash) {
+            return NextResponse.json(
+                { error: 'Pledge ID and transaction hash are required' },
+                { status: 400 }
+            )
+        }
+
+        // Update pledge with transaction hash
+        const updatedPledge = await prisma.pledge.update({
+            where: { id: pledgeId },
+            data: {
+                escrowTxHash,
+                status: 'pending', // Will be updated to 'active' when transaction is confirmed
+            },
+            include: {
+                fundraise: {
+                    select: {
+                        id: true,
+                        title: true,
+                        user: {
+                            select: {
+                                id: true,
+                                privyUserId: true
+                            }
+                        }
+                    }
+                },
+                staker: {
+                    select: {
+                        id: true,
+                        privyUserId: true
+                    }
+                }
+            }
+        })
+
+        return NextResponse.json({
+            message: 'Pledge updated successfully',
+            pledge: updatedPledge
+        })
+    } catch (error) {
+        console.error('Error updating pledge:', error)
+        return NextResponse.json(
+            { error: 'Internal server error' },
+            { status: 500 }
+        )
+    }
+}

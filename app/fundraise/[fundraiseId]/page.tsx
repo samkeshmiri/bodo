@@ -74,6 +74,15 @@ export default function FundraisePage() {
             </button>
           </div>
         </div>
+        
+        <div className="mb-4">
+          <a
+            href={`/fundraise/${fundraiseId}/pledge`}
+            className="block w-full bg-indigo-600 text-white text-center py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors"
+          >
+            Make a Pledge
+          </a>
+        </div>
       </div>
     </div>
   );
