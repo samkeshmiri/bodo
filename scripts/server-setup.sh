@@ -32,8 +32,8 @@ sudo apt install -y nginx
 
 # Create application directory
 echo -e "${YELLOW}📁 Creating application directory...${NC}"
-sudo mkdir -p /var/www/bodo
-sudo chown $USER:$USER /var/www/bodo
+mkdir -p $HOME/bodo
+# Directory ownership not needed for home directory
 
 # Create log directory
 echo -e "${YELLOW}📁 Creating log directory...${NC}"
@@ -45,7 +45,7 @@ echo -e "${YELLOW}🔧 Setting up nginx configuration...${NC}"
 sudo tee /etc/nginx/sites-available/bodo << EOF
 server {
     listen 80;
-    server_name your-domain.com;  # Replace with your domain
+    server_name 154.42.7.63;  # Replace with your domain
 
     location / {
         proxy_pass http://localhost:3000;

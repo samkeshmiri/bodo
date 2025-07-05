@@ -20,6 +20,7 @@ jobs:
         echo "SERVER_USERNAME: ${{ vars.SERVER_USERNAME }}"
         echo "SERVER_PORT: ${{ vars.SERVER_PORT }}"
         echo "SSH_KEY exists: ${{ secrets.SERVER_SSH_KEY != '' && 'YES' || 'NO' }}"
+        echo "Triggering branch: ${{ github.ref_name }}"
         
     - name: Deploy to server
       uses: appleboy/ssh-action@v1.0.3
@@ -32,9 +33,9 @@ jobs:
           echo "Connected to server successfully!"
           echo "Current directory: $(pwd)"
           echo "Server hostname: $(hostname)"
-          cd /var/www/bodo
+          cd ~/bodo
           echo "Changed to app directory: $(pwd)"
-          git pull origin main
+          git pull origin ${{ github.ref_name }}
           npm ci
           npm run db:generate
           npm run build

@@ -7,7 +7,7 @@ set -e
 
 # Configuration
 APP_NAME="bodo-app"
-APP_DIR="/var/www/bodo"
+APP_DIR="$HOME/bodo"
 GIT_REPO="https://github.com/yourusername/bodo.git"  # Update with your repo URL
 BRANCH="main"
 

@@ -4,7 +4,7 @@ module.exports = {
       name: 'bodo-app',
       script: 'npm',
       args: 'start',
-      cwd: '/var/www/bodo',
+      cwd: '$HOME/bodo',
       instances: 1,
       autorestart: true,
       watch: false,
