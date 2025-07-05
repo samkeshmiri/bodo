@@ -72,6 +72,18 @@ export async function POST(request: NextRequest) {
             }
         })
 
+        // If walletAddress is present, create wallet record
+        if (body.walletAddress) {
+            await prisma.wallet.create({
+                data: {
+                    userId: user.id,
+                    address: body.walletAddress,
+                    provider: 'privy',
+                    status: 'active'
+                }
+            });
+        }
+
         return NextResponse.json(
             {
                 message: 'User created successfully',

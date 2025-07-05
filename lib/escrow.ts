@@ -1,28 +1,31 @@
 import { ethers } from 'ethers'
 import { prisma } from './prisma'
+import { PrivyClient } from '@privy-io/server-auth'
 
 // Lazy-load provider and escrow wallet to avoid build-time initialization
 let provider: ethers.JsonRpcProvider | null = null
 let escrowWallet: ethers.Wallet | null = null
 
+// Lazy-load Privy client for escrow wallet
+let privyClient: PrivyClient | null = null
+
 function getProvider(): ethers.JsonRpcProvider {
     if (!provider) {
-        if (!process.env.NEXT_PUBLIC_RPC_URL) {
-            throw new Error('NEXT_PUBLIC_RPC_URL environment variable is required')
-        }
-        provider = new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_RPC_URL)
+        // Use Privy's RPC endpoint for Sepolia
+        const privyRpcUrl = `https://rpc.privy.io/v1/${process.env.PRIVY_APP_ID}/sepolia`
+        provider = new ethers.JsonRpcProvider(privyRpcUrl)
     }
     return provider
 }
 
-function getEscrowWallet(): ethers.Wallet {
-    if (!escrowWallet) {
-        if (!process.env.ESCROW_WALLET_PRIVATE_KEY) {
-            throw new Error('ESCROW_WALLET_PRIVATE_KEY environment variable is required')
+function getPrivyClient(): PrivyClient {
+    if (!privyClient) {
+        if (!process.env.PRIVY_APP_ID || !process.env.PRIVY_APP_SECRET) {
+            throw new Error('PRIVY_APP_ID and PRIVY_APP_SECRET environment variables are required');
         }
-        escrowWallet = new ethers.Wallet(process.env.ESCROW_WALLET_PRIVATE_KEY, getProvider())
+        privyClient = new PrivyClient(process.env.PRIVY_APP_ID, process.env.PRIVY_APP_SECRET);
     }
-    return escrowWallet
+    return privyClient;
 }
 
 export interface EscrowTransaction {
@@ -45,23 +48,6 @@ export class EscrowService {
             EscrowService.instance = new EscrowService()
         }
         return EscrowService.instance
-    }
-
-    async getEscrowBalance(): Promise<string> {
-        try {
-            // USDC contract address on Sepolia testnet
-            const USDC_CONTRACT_ADDRESS = '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238';
-            
-            // USDC ABI for balanceOf function
-            const usdcAbi = ['function balanceOf(address owner) view returns (uint256)'];
-            const usdcContract = new ethers.Contract(USDC_CONTRACT_ADDRESS, usdcAbi, getProvider());
-            
-            const balance = await usdcContract.balanceOf(process.env.ESCROW_WALLET_ADDRESS!)
-            return ethers.formatUnits(balance, 6) // USDC has 6 decimals
-        } catch (error) {
-            console.error('Error getting escrow balance:', error)
-            throw error
-        }
     }
 
     async monitorEscrowWallet(): Promise<void> {
@@ -137,39 +123,37 @@ export class EscrowService {
                 throw new Error('User wallet not found')
             }
 
-            // Calculate payout amount
-            const payoutAmount = Number(pledge.perKmRate) * Number(activity.distance)
-
-            // Check if we have enough balance
-            const escrowBalance = await this.getEscrowBalance()
-            if (Number(escrowBalance) < payoutAmount) {
-                throw new Error('Insufficient escrow balance')
-            }
-
             // USDC contract address on Sepolia testnet
             const USDC_CONTRACT_ADDRESS = '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238';
-            
-            // USDC ABI for transfer function
-            const usdcAbi = ['function transfer(address to, uint256 amount) returns (bool)'];
-            const usdcContract = new ethers.Contract(USDC_CONTRACT_ADDRESS, usdcAbi, getEscrowWallet());
-            
-            // Convert payout amount to USDC (6 decimals)
-            const usdcAmount = ethers.parseUnits(payoutAmount.toString(), 6);
-            
-            // Send USDC transaction
-            const tx = await usdcContract.transfer(userWallet.address, usdcAmount)
 
-            // Wait for confirmation
-            const receipt = await tx.wait()
+            // Convert payout amount to USDC (6 decimals)
+            const usdcAmount = ethers.parseUnits(amount.toString(), 6).toString();
+
+            // Use escrow wallet's private key to send USDC
+            if (!process.env.ESCROW_WALLET_PRIVATE_KEY) {
+                throw new Error('ESCROW_WALLET_PRIVATE_KEY environment variable is required');
+            }
+
+            const escrowWallet = new ethers.Wallet(process.env.ESCROW_WALLET_PRIVATE_KEY, getProvider());
+            const tx = await escrowWallet.sendTransaction({
+                to: USDC_CONTRACT_ADDRESS,
+                value: '0x0', // No ETH sent, only USDC tokens
+                data: new ethers.Interface([
+                    'function transfer(address to, uint256 amount) returns (bool)'
+                ]).encodeFunctionData('transfer', [userWallet.address, usdcAmount]),
+            });
+
+            // Get transaction hash
+            const txHash = tx.hash;
 
             // Create payout record
-            const payout = await prisma.payout.create({
+            await prisma.payout.create({
                 data: {
                     pledgeId,
                     activityId,
-                    amount: payoutAmount,
+                    amount: amount,
                     status: 'completed',
-                    txHash: receipt!.hash,
+                    txHash: txHash,
                 },
             })
 
@@ -178,15 +162,15 @@ export class EscrowService {
                 where: { id: pledgeId },
                 data: {
                     amountPaidOut: {
-                        increment: payoutAmount,
+                        increment: amount,
                     },
                     amountRemaining: {
-                        decrement: payoutAmount,
+                        decrement: amount,
                     },
                 },
             })
 
-            return receipt!.hash
+            return txHash;
         } catch (error) {
             console.error('Error processing payout:', error)
             throw error

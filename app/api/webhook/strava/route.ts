@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
                 // Return the challenge as JSON, as required by Strava
                 return NextResponse.json({ "hub.challenge": challenge }, { status: 200 })
             } else {
-                console.error('❌ Invalid verify token')
+            console.error('❌ Invalid verify token')
                 return NextResponse.json(
                     { error: 'Invalid verify token' },
                     { status: 403 }

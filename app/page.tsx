@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react';
-import { usePrivy, useLogin, useLoginWithEmail, useSendTransaction } from '@privy-io/react-auth';
+import { useLoginWithEmail, usePrivy, useCreateWallet } from '@privy-io/react-auth';
+import { useEffect, useState } from 'react';
 
 interface User {
   id: string;
@@ -27,15 +27,26 @@ export default function HomePage() {
   const isPrivyAvailable = typeof window !== 'undefined' && process.env.NEXT_PUBLIC_PRIVY_APP_ID && process.env.NEXT_PUBLIC_PRIVY_APP_ID !== 'dummy';
   
   const { ready, authenticated, logout, user: privyUser } = usePrivy();
-  const { login } = useLogin();
   const { sendCode, loginWithCode } = useLoginWithEmail();
+  const { createWallet } = useCreateWallet({
+    onSuccess: async (walletObj) => {
+      // Support both object and string return types
+      const address = walletObj?.address || walletObj;
+      if (privyUser?.id && address && user?.id) {
+        await fetch(`/api/user/${user.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ walletAddress: address })
+        });
+        // Optionally, re-fetch user here if you want to update UI
+      }
+    }
+  });
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [step, setStep] = useState<'email' | 'otp' | 'loggedIn'>('email');
   const [authError, setAuthError] = useState("");
   const [user, setUser] = useState<User | null>(null);
-  const { sendTransaction } = useSendTransaction();
-  const [stravaConnected, setStravaConnected] = useState(false);
   const [fundraise, setFundraise] = useState<Fundraise | null>(null);
   const [fundraiseError, setFundraiseError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -61,7 +72,7 @@ export default function HomePage() {
         setLoading(true);
         setAuthError('');
         try {
-          // Extract wallet address from privyUser
+          // 1. Create or update user in backend
           const walletAddress = privyUser.wallet?.address;
           const res = await fetch('/api/user', {
             method: 'POST',
@@ -73,15 +84,27 @@ export default function HomePage() {
             })
           });
           const data = await res.json();
+          let backendUserId = data.user?.id || data.userId;
           if (!res.ok && data.userId) {
-            // User already exists, fetch user
-            const userRes = await fetch(`/api/user/${data.userId}`);
-            const userData = await userRes.json();
-            setUser(userData.user as User);
-          } else if (data.user) {
-            setUser(data.user as User);
-          } else {
-            throw new Error(data.error || 'Failed to create/fetch user');
+            // User already exists, update user with wallet address if present
+            if (walletAddress) {
+              await fetch(`/api/user/${data.userId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ walletAddress })
+              });
+            }
+            backendUserId = data.userId;
+          }
+          // 2. Fetch user details
+          const userRes = await fetch(`/api/user/${backendUserId}`);
+          const userData = await userRes.json();
+          setUser(userData.user as User);
+
+          // 3. If user does not have a wallet, create one
+          if (!privyUser.wallet?.address) {
+            await createWallet();
+            // onSuccess will handle syncing wallet to backend
           }
         } catch (err) {
           setAuthError(err instanceof Error ? err.message : String(err));

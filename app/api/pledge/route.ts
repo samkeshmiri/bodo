@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { validateRequest, createPledgeSchema } from '@/lib/validations'
+import { createPledgeSchema } from '@/lib/validations'
 
 export async function GET(request: NextRequest) {
     try {

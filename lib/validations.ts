@@ -6,6 +6,7 @@ export const createUserSchema = z.object({
     privyUserId: z.string().min(1, 'Privy user ID is required'),
     stravaId: z.string().optional(),
     status: z.string().optional(),
+    walletAddress: z.string().min(42, 'Invalid wallet address').max(42, 'Invalid wallet address').optional(),
 })
 
 export const updateUserSchema = z.object({
