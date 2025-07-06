@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import confetti from "canvas-confetti";
 
 function PrimaryActionButton({ children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
@@ -36,13 +36,21 @@ function PrimaryActionButton({ children, ...props }: React.ButtonHTMLAttributes<
 export default function FundraiseConfirmationPage() {
   const router = useRouter();
   const code = "8XBS7SHA9"; // Placeholder code
+  const [inviteUrl, setInviteUrl] = useState("");
+  const [canvasHeight, setCanvasHeight] = useState(700);
   const inputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setInviteUrl(`${window.location.origin}/fundraise/${code}/success`);
+      setCanvasHeight(window.innerHeight * 0.92 || 700);
+    }
+  }, []);
+
   const handleCopy = () => {
     if (inputRef.current) {
-      inputRef.current.select();
-      document.execCommand("copy");
+      navigator.clipboard.writeText(inviteUrl);
     }
   };
 
@@ -82,7 +90,7 @@ export default function FundraiseConfirmationPage() {
     <div className="flex items-center justify-center min-h-screen w-full relative" style={{ minHeight: '100vh', background: '#000', overflow: 'hidden' }}>
       {/* Floating Success Icon */}
       <div className="absolute left-1/2 z-30" style={{ top: 60, transform: 'translateX(-50%)' }}>
-        <Image src="/assets/success-icon.svg" alt="Success" width={180} height={180} />
+        <Image src="/assets/success-icon2.svg" alt="Success" width={180} height={180} />
       </div>
       {/* Mobile fixed container */}
       <div
@@ -104,7 +112,7 @@ export default function FundraiseConfirmationPage() {
         <canvas
           ref={canvasRef}
           width={390}
-          height={window.innerHeight * 0.92 || 700}
+          height={canvasHeight}
           style={{
             position: 'absolute',
             left: 0,
@@ -140,7 +148,7 @@ export default function FundraiseConfirmationPage() {
             <input
               ref={inputRef}
               className="flex-1 rounded-l-lg px-4 py-3 text-xl bg-white/80 text-gray-700 focus:outline-none font-semibold tracking-widest text-center"
-              value={code}
+              value={inviteUrl}
               readOnly
               style={{ borderTopLeftRadius: 12, borderBottomLeftRadius: 12, fontFamily: 'Red Hat Display, monospace', letterSpacing: 4 }}
               onFocus={e => e.target.select()}

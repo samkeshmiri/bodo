@@ -1,10 +1,18 @@
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { useRef } from "react";
+import { useRef, Suspense } from "react";
 import Image from "next/image";
 
-export default function FundraiseSuccessPage() {
+export default function FundraiseSuccessPageWrapper() {
+  return (
+    <Suspense>
+      <FundraiseSuccessPage />
+    </Suspense>
+  );
+}
+
+function FundraiseSuccessPage() {
   const searchParams = useSearchParams();
   const code = searchParams.get("code") || "";
   const inputRef = useRef<HTMLInputElement>(null);
