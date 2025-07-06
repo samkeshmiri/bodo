@@ -91,10 +91,8 @@ export default function CreateFundraisePage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to create fundraise');
       setFundraise(data.fundraise as Fundraise);
-      // Redirect to homepage after 3 seconds
-      setTimeout(() => {
-        router.push('/homepage');
-      }, 3000);
+      // Redirect to success page with fundraiser id
+      router.push(`/fundraises/success?code=${data.fundraise.id}`);
     } catch (err) {
       setFundraiseError(err instanceof Error ? err.message : String(err));
     } finally {
