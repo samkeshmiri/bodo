@@ -1,63 +1,115 @@
 'use client'
 
+import Image from 'next/image';
 import Link from 'next/link';
 
 export default function HomePage() {
   return (
-    <div className="relative min-h-screen flex flex-col justify-between items-center overflow-hidden">
-      {/* Background image */}
-      <div className="absolute inset-0 w-full h-full">
-        <img
-          src="/runner.png"
-          alt="Runner background"
-          className="w-full h-full object-cover object-center"
-        />
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-      </div>
-
-      {/* Logo at the top */}
-      <div className="relative z-10 w-full flex justify-center pt-8">
-        {/* Replace with your SVG or image if available */}
-        <span className="block">
-          <svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M28 6L14 50H24.5L28 39.5L31.5 50H42L28 6Z" fill="white"/>
-            <path d="M36 18H44V22H36V18Z" fill="white"/>
-          </svg>
-        </span>
-      </div>
-
-      {/* Main content at the bottom */}
-      <div className="relative z-10 w-full flex flex-col items-center pb-10 px-4">
-        <div className="w-full max-w-md rounded-3xl bg-black/40 backdrop-blur-md p-8 flex flex-col items-center shadow-xl">
-          <h1 className="text-3xl md:text-4xl font-bold text-white mb-2 text-center">Run With Purpose</h1>
-          <p className="text-lg text-gray-200 mb-8 text-center">Get fit and raise money for causes you care about</p>
-          {/* Navigation Links */}
-          <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-            <h2 className="text-lg font-semibold text-gray-800 mb-3">Quick Navigation</h2>
-            <div className="flex flex-wrap gap-2">
-              <Link 
-                href="/campaigns"
-                className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm"
-              >
-                Browse Campaigns
-              </Link>
-              <Link 
-                href="/fundraises"
-                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm"
-              >
-                View Fundraises
-              </Link>
-            </div>
-          </div>
-          <Link
-            href="/login"
-            className="w-full rounded-full bg-white text-gray-900 text-lg font-semibold py-3 shadow-lg hover:bg-gray-100 transition text-center focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            style={{ boxShadow: '0 4px 24px 0 rgba(0,0,0,0.15)' }}
-          >
-            Get Started
-          </Link>
+    <div className="flex items-center justify-center min-h-screen w-full" style={{ minHeight: '100vh', background: '#000', overflow: 'hidden' }}>
+      {/* Mobile fixed container */}
+      <div
+        className="relative"
+        style={{
+          width: 390,
+          height: '92vh',
+          maxWidth: '100vw',
+          borderRadius: 18,
+          background: '#F2F2F2',
+          overflow: 'hidden',
+          boxSizing: 'border-box',
+          marginTop: 16,
+          marginBottom: 16,
+          border: '2.5px solid rgba(255,255,255,0.18)',
+          position: 'relative',
+        }}
+      >
+        {/* Background image */}
+        <div className="absolute inset-0 w-full h-full" style={{ borderRadius: 18, overflow: 'hidden', zIndex: 0 }}>
+          <img
+            src="/runner.png"
+            alt="Runner background"
+            className="w-full h-full object-cover object-center"
+            style={{ borderRadius: 18 }}
+          />
+          {/* Gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" style={{ borderRadius: 18 }} />
         </div>
+        {/* Logo at the top center */}
+        <div className="relative z-10 w-full flex justify-center" style={{ paddingTop: 32, paddingBottom: 24 }}>
+          <Image src="/assets/logo.svg" alt="Logo" width={56} height={56} priority />
+        </div>
+        {/* Main content at the bottom, glassmorphic rectangle, bottom left aligned, full width, no border, touches bottom */}
+        <div className="absolute left-0 right-0 bottom-0 z-10 flex flex-col items-start justify-end px-0" style={{ width: '100%' }}>
+          <div
+            style={{
+              width: '100%',
+              borderTopLeftRadius: 32,
+              borderTopRightRadius: 32,
+              borderBottomLeftRadius: 0,
+              borderBottomRightRadius: 0,
+              background: 'linear-gradient(180deg, rgba(121, 71, 17, 0.00) 0%, rgba(194, 87, 34, 0.97) 100%)',
+              boxShadow: '0 4px 32px 0 rgba(0,0,0,0.18)',
+              backdropFilter: 'blur(17.05px)',
+              WebkitBackdropFilter: 'blur(17.05px)',
+              padding: '32px 24px 24px 24px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-start',
+              margin: '0',
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+          >
+            {/* Blue blend overlay for seamless top blending */}
+            <div style={{
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              width: '100%',
+              height: '100%',
+              borderTopLeftRadius: 32,
+              borderTopRightRadius: 32,
+              pointerEvents: 'none',
+              background: 'linear-gradient(180deg, rgba(121, 71, 17, 0.00) 0%, rgba(194, 87, 34, 0.10) 30%, rgba(194, 87, 34, 0.97) 100%)',
+            }} />
+            <h1
+              style={{
+                fontFamily: 'Red Hat Display, sans-serif',
+                fontWeight: 500,
+                fontSize: 32,
+                color: '#fff',
+                marginBottom: 10,
+                textAlign: 'left',
+                letterSpacing: 0.2,
+                lineHeight: 1.1,
+                position: 'relative',
+                zIndex: 1,
+              }}
+            >
+              Run With Purpose
+            </h1>
+            <p
+              style={{
+                fontFamily: 'Red Hat Display, sans-serif',
+                fontWeight: 400,
+                fontSize: 18,
+                color: '#FFFFFF9C',
+                marginBottom: 28,
+                textAlign: 'left',
+                lineHeight: 1.3,
+                position: 'relative',
+                zIndex: 1,
+              }}
+            >
+              Get fit and raise money for causes you care about
+            </p>
+            <Link href="/login" style={{ width: '100%', display: 'block', position: 'relative', zIndex: 1 }}>
+              <Image src="/assets/getstarted.svg" alt="Get Started" width={320} height={56} style={{ width: '100%', height: 'auto', maxWidth: 320, minWidth: 180, display: 'block' }} />
+            </Link>
+          </div>
+        </div>
+        {/* Glassmorphic sticky bottom navbar (INSIDE phone container) */}
+     
       </div>
     </div>
   );

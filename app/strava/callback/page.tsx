@@ -30,7 +30,7 @@ function StravaCallbackInner() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed to connect Strava');
         setStatus('Strava connected! Redirecting...');
-        setTimeout(() => router.push('/'), 1500);
+        setTimeout(() => router.push('/homepage'), 1500);
       } catch (err: any) {
         setStatus(err.message || 'Failed to connect Strava');
       }
