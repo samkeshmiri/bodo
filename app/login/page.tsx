@@ -79,20 +79,12 @@ export default function LoginPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authenticated, privyUser?.id]);
 
-  // Redirect to homepage when user is authenticated and has Strava connected
+  // Redirect to homepage when user is authenticated (regardless of Strava connection)
   useEffect(() => {
-    if (user && user.stravaId && authenticated) {
+    if (user && authenticated) {
       router.push('/homepage');
     }
   }, [user, authenticated, router]);
-
-  // Connect Strava
-  function handleConnectStrava() {
-    const clientId = process.env.NEXT_PUBLIC_STRAVA_CLIENT_ID;
-    const redirectUri = `${window.location.origin}/strava/callback`;
-    const stravaAuthUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&approval_prompt=auto&scope=activity:read`;
-    window.location.href = stravaAuthUrl;
-  }
 
   // Handle login flow
   const handleSendCode = async () => {
@@ -238,31 +230,17 @@ export default function LoginPage() {
                   )}
                 </>
               )}
-              {/* Step 2: After login, show user info */}
+              {/* Step 2: After login, show user info and redirect */}
               {authenticated && (
                 <div className="flex flex-col items-center space-y-4 w-full">
                   <div className="text-green-400 font-medium">Logged in as: {user?.privyUserId || user?.id}</div>
+                  <div className="text-gray-200 text-center">Redirecting to homepage...</div>
                   <button onClick={logout} className="text-xs text-red-300 underline mb-2">Logout</button>
                 </div>
               )}
               {/* Backend User Creation/Fetch */}
               {authenticated && !user && loading && (
                 <div className="text-gray-200 text-center">Syncing user...</div>
-              )}
-              {/* Connect Strava */}
-              {user && !user.stravaId && (
-                <div className="flex flex-col items-center space-y-4 w-full">
-                  <div className="text-green-400 font-medium">User ready: {user.privyUserId}</div>
-                  <button onClick={handleConnectStrava} className="w-full bg-orange-500 text-white py-2 rounded-full hover:bg-orange-600">
-                    Connect Strava
-                  </button>
-                </div>
-              )}
-              {user && user.stravaId && (
-                <div className="flex flex-col items-center space-y-4 w-full">
-                  <div className="text-green-400 font-medium">✅ Strava Connected!</div>
-                  <div className="text-gray-200 text-center">Redirecting to homepage...</div>
-                </div>
               )}
               {process.env.NODE_ENV === 'development' && (
                 <button

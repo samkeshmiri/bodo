@@ -111,11 +111,6 @@ export default function CreateFundraisePage() {
       <div className="min-h-screen flex items-center justify-center bg-black text-white">You must be logged in to create a fundraise.</div>
     );
   }
-  if (!user?.stravaId) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-black text-white">You must connect your Strava account first.</div>
-    );
-  }
 
   return (
     <div className="relative min-h-screen flex flex-col justify-between items-center overflow-hidden">

@@ -2,8 +2,29 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
+import { useState } from 'react'
+import { usePrivy } from '@privy-io/react-auth'
+import { useRouter } from 'next/navigation'
 
 export default function ProfilePage() {
+  // TODO: Replace this with real user data
+  const [stravaConnected, setStravaConnected] = useState(false);
+  const { logout } = usePrivy();
+  const router = useRouter();
+
+  function handleConnectStrava() {
+    const clientId = process.env.NEXT_PUBLIC_STRAVA_CLIENT_ID;
+    const redirectUri = typeof window !== 'undefined' ? `${window.location.origin}/strava/callback` : '';
+    const stravaAuthUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&approval_prompt=auto&scope=activity:read`;
+    window.location.href = stravaAuthUrl;
+  }
+
+  // Logout and redirect to homepage
+  const handleLogout = async () => {
+    await logout();
+    router.push('/');
+  };
+
   return (
     <div
       className="flex items-center justify-center min-h-screen w-full"
@@ -74,6 +95,33 @@ export default function ProfilePage() {
           
           {/* Profile 3 */}
           <Image src="/assets/Profile 3.svg" alt="Profile 3" width={350} height={400} style={{ width: '100%', height: 'auto' }} />
+
+          {/* Connect Strava button (only if not connected) */}
+          {!stravaConnected && (
+            <button
+              onClick={handleConnectStrava}
+              className="w-full rounded-full bg-orange-500 text-white text-lg font-semibold py-3 shadow-lg hover:bg-orange-600 transition text-center focus:outline-none focus:ring-2 focus:ring-orange-400 mb-2"
+              style={{ boxShadow: '0 4px 24px 0 rgba(0,0,0,0.15)' }}
+            >
+              <div className="flex items-center justify-center gap-2">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="#fff"/>
+                </svg>
+                Connect Strava
+              </div>
+            </button>
+          )}
+
+          {/* Settings and other cards */}
+
+          {/* Logout button */}
+          <button
+            onClick={handleLogout}
+            className="w-full rounded-full bg-white text-gray-900 text-lg font-semibold py-3 shadow hover:bg-gray-100 transition text-center focus:outline-none focus:ring-2 focus:ring-gray-300 mt-2"
+            style={{ boxShadow: '0 2px 12px 0 rgba(0,0,0,0.08)' }}
+          >
+            Logout
+          </button>
         </div>
 
         {/* Sticky plus button wrapper */}
