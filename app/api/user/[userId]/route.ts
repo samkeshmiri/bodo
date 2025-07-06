@@ -107,26 +107,31 @@ export async function PUT(
 
         // Upsert wallet if walletAddress is present
         if (walletAddress) {
-            await prisma.wallet.upsert({
+            const existingWallet = await prisma.wallet.findFirst({
                 where: {
-                    userId_provider: {
-                        userId: user.id,
-                        provider: 'privy'
-                    }
-                },
-                update: {
-                    address: walletAddress,
-                    status: 'active',
-                    provider: 'privy',
-                    userId: user.id
-                },
-                create: {
                     userId: user.id,
-                    address: walletAddress,
-                    provider: 'privy',
-                    status: 'active'
+                    provider: 'privy'
                 }
             })
+
+            if (existingWallet) {
+                await prisma.wallet.update({
+                    where: { id: existingWallet.id },
+                    data: {
+                        address: walletAddress,
+                        status: 'active'
+                    }
+                })
+            } else {
+                await prisma.wallet.create({
+                    data: {
+                        userId: user.id,
+                        address: walletAddress,
+                        provider: 'privy',
+                        status: 'active'
+                    }
+                })
+            }
         }
 
         return NextResponse.json({
