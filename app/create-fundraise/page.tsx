@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface User {
   id: string;
@@ -29,6 +30,7 @@ export default function CreateFundraisePage() {
   const [loading, setLoading] = useState(true);
   const [fundraise, setFundraise] = useState<Fundraise | null>(null);
   const [fundraiseError, setFundraiseError] = useState('');
+  const router = useRouter();
 
   // Fetch user info on mount
   useEffect(() => {
@@ -89,6 +91,10 @@ export default function CreateFundraisePage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to create fundraise');
       setFundraise(data.fundraise as Fundraise);
+      // Redirect to homepage after 3 seconds
+      setTimeout(() => {
+        router.push('/homepage');
+      }, 3000);
     } catch (err) {
       setFundraiseError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -143,7 +149,7 @@ export default function CreateFundraisePage() {
         )}
         <div className="w-full max-w-md rounded-3xl bg-black/40 backdrop-blur-md p-8 flex flex-col items-center shadow-xl">
           <div className="mb-6 w-full">
-            <Link href="/" className="text-indigo-200 hover:text-white text-sm">
+            <Link href="/homepage" className="text-indigo-200 hover:text-white text-sm">
               ← Back to Home
             </Link>
           </div>
@@ -182,6 +188,10 @@ export default function CreateFundraisePage() {
               <a href={`/fundraise/${fundraise.id}`} className="text-indigo-200 underline break-all" target="_blank" rel="noopener noreferrer">
                 {typeof window !== 'undefined' ? window.location.origin : ''}/fundraise/{fundraise.id}
               </a>
+              <div className="text-gray-300 text-sm mt-2">Redirecting to homepage in 3 seconds...</div>
+              <Link href="/homepage" className="w-full rounded-full bg-white text-gray-900 text-lg font-semibold py-3 shadow-lg hover:bg-gray-100 transition text-center focus:outline-none focus:ring-2 focus:ring-indigo-500" style={{ boxShadow: '0 4px 24px 0 rgba(0,0,0,0.15)' }}>
+                Go to Homepage Now
+              </Link>
             </div>
           )}
         </div>
