@@ -76,6 +76,45 @@ export default function ProfilePage() {
           <Image src="/assets/Profile 3.svg" alt="Profile 3" width={350} height={400} style={{ width: '100%', height: 'auto' }} />
         </div>
 
+        {/* Sticky plus button wrapper */}
+        <div
+          style={{
+            position: 'sticky',
+            bottom: 92,
+            width: '100%',
+            display: 'flex',
+            justifyContent: 'flex-end',
+            zIndex: 40,
+            pointerEvents: 'none', // so only the button is clickable
+          }}
+        >
+          <button
+            style={{
+              marginRight: 24,
+              width: 64,
+              height: 64,
+              borderRadius: 20,
+              background: 'rgba(255,255,255,0.65)',
+              boxShadow: '0 4px 32px 0 rgba(0,0,0,0.10)',
+              border: '2px solid rgba(255,255,255,0.35)',
+              backdropFilter: 'blur(16px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 41,
+              transition: 'box-shadow 0.2s, background 0.2s',
+              pointerEvents: 'auto', // make the button itself clickable
+            }}
+            className="group hover:scale-105 active:scale-95"
+            tabIndex={0}
+          >
+            {/* plus.svg (active: #DD2C00) */}
+            <svg width="30" height="28" viewBox="0 0 30 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6.5874 13.9999H23.5041M15.0457 5.83325V22.1666" stroke="#DD2C00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+        </div>
+
         {/* Glassmorphic sticky bottom navbar (INSIDE phone container) */}
         <nav
           style={{

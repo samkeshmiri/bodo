@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
+import { useState } from 'react'
 
 function PrimaryActionButton({ children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
@@ -31,10 +32,19 @@ function PrimaryActionButton({ children, ...props }: React.ButtonHTMLAttributes<
 }
 
 export default function HomepagePage() {
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  const openDrawer = () => setIsDrawerOpen(true);
+  const closeDrawer = () => setIsDrawerOpen(false);
+
   return (
     <div
       className="flex items-center justify-center min-h-screen w-full"
-      style={{ minHeight: '100vh', background: '#000', overflow: 'hidden' }}
+      style={{ 
+        minHeight: '100vh', 
+        background: '#000', 
+        overflow: isDrawerOpen ? 'hidden' : 'hidden' 
+      }}
     >
       {/* Mobile fixed container */}
       <div
@@ -45,7 +55,7 @@ export default function HomepagePage() {
           maxWidth: '100vw',
           borderRadius: 18,
           background: '#F2F2F2',
-          overflowY: 'auto',
+          overflowY: isDrawerOpen ? 'hidden' : 'auto',
           boxSizing: 'border-box',
           marginTop: 16,
           marginBottom: 16,
@@ -325,6 +335,311 @@ export default function HomepagePage() {
           </div>
         </div>
 
+        {/* Sticky plus button wrapper */}
+        <div
+          style={{
+            position: 'sticky',
+            bottom: 92,
+            width: '100%',
+            display: 'flex',
+            justifyContent: 'flex-end',
+            zIndex: 40,
+            pointerEvents: 'none', // so only the button is clickable
+          }}
+        >
+          <button
+            onClick={openDrawer}
+            style={{
+              marginRight: 24,
+              width: 64,
+              height: 64,
+              borderRadius: 20,
+              background: 'rgba(255,255,255,0.65)',
+              boxShadow: '0 4px 32px 0 rgba(0,0,0,0.10)',
+              border: '2px solid rgba(255,255,255,0.35)',
+              backdropFilter: 'blur(16px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 41,
+              transition: 'box-shadow 0.2s, background 0.2s',
+              pointerEvents: 'auto', // make the button itself clickable
+            }}
+            className="group hover:scale-105 active:scale-95"
+            tabIndex={0}
+          >
+            {/* plus.svg (active: #DD2C00) */}
+            <svg width="30" height="28" viewBox="0 0 30 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6.5874 13.9999H23.5041M15.0457 5.83325V22.1666" stroke="#DD2C00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+        </div>
+
+        {/* Bottom Drawer - WITHIN mobile container */}
+        {isDrawerOpen && (
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(0,0,0,0.5)',
+              zIndex: 1000,
+              display: 'flex',
+              alignItems: 'flex-end',
+              animation: 'fadeIn 0.3s ease',
+            }}
+            onClick={closeDrawer}
+          >
+            <div
+              style={{
+                width: '100%',
+                background: '#F2F2F2',
+                borderTopLeftRadius: 24,
+                borderTopRightRadius: 24,
+                padding: '24px',
+                maxHeight: '80vh',
+                overflowY: 'auto',
+                animation: 'slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Drawer Header */}
+              <div className="flex items-center justify-between mb-6">
+                <h2
+                  style={{
+                    color: '#696F79',
+                    fontFamily: 'Red Hat Display, sans-serif',
+                    fontSize: 20,
+                    fontWeight: 500,
+                  }}
+                >
+                  Start Fundraiser
+                </h2>
+                <button
+                  onClick={closeDrawer}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: 8,
+                    cursor: 'pointer',
+                    borderRadius: 8,
+                    transition: 'background-color 0.2s',
+                  }}
+                  className="hover:bg-gray-100"
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M18 6L6 18M6 6L18 18" stroke="#696F79" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+              </div>
+
+              {/* Form Fields */}
+              <div className="space-y-4">
+                {/* Fundraiser Title */}
+                <div>
+                  <label
+                    style={{
+                      color: '#696F79',
+                      fontFamily: 'Red Hat Display, sans-serif',
+                      fontSize: 14,
+                      fontWeight: 600,
+                      marginBottom: 8,
+                      display: 'block',
+                    }}
+                  >
+                    Fundraiser Title
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Enter fundraiser title"
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      borderRadius: 8,
+                      border: '1px solid #E5E7EB',
+                      background: '#FFFFFF',
+                      fontSize: 16,
+                      fontFamily: 'Red Hat Display, sans-serif',
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                      color: '#374151',
+                    }}
+                  />
+                </div>
+
+                {/* Personal Goal and Duration Row */}
+                <div className="flex gap-4">
+                  {/* Personal Goal (KM) */}
+                  <div className="flex-1">
+                    <label
+                      style={{
+                        color: '#696F79',
+                        fontFamily: 'Red Hat Display, sans-serif',
+                        fontSize: 14,
+                        fontWeight: 600,
+                        marginBottom: 8,
+                        display: 'block',
+                      }}
+                    >
+                      Personal Goal (KM)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="0"
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        borderRadius: 8,
+                        border: '1px solid #E5E7EB',
+                        background: '#FFFFFF',
+                        fontSize: 16,
+                        fontFamily: 'Red Hat Display, sans-serif',
+                        outline: 'none',
+                        boxSizing: 'border-box',
+                        color: '#374151',
+                      }}
+                    />
+                  </div>
+
+                  {/* Duration (days) */}
+                  <div className="flex-1">
+                    <label
+                      style={{
+                        color: '#696F79',
+                        fontFamily: 'Red Hat Display, sans-serif',
+                        fontSize: 14,
+                        fontWeight: 600,
+                        marginBottom: 8,
+                        display: 'block',
+                      }}
+                    >
+                      Duration (days)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="0"
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        borderRadius: 8,
+                        border: '1px solid #E5E7EB',
+                        background: '#FFFFFF',
+                        fontSize: 16,
+                        fontFamily: 'Red Hat Display, sans-serif',
+                        outline: 'none',
+                        boxSizing: 'border-box',
+                        color: '#374151',
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Charity Search */}
+                <div>
+                  <label
+                    style={{
+                      color: '#696F79',
+                      fontFamily: 'Red Hat Display, sans-serif',
+                      fontSize: 14,
+                      fontWeight: 600,
+                      marginBottom: 8,
+                      display: 'block',
+                    }}
+                  >
+                    Charity
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type="text"
+                      placeholder="Search for a charity..."
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        paddingRight: '48px',
+                        borderRadius: 8,
+                        border: '1px solid #E5E7EB',
+                        background: '#FFFFFF',
+                        fontSize: 16,
+                        fontFamily: 'Red Hat Display, sans-serif',
+                        outline: 'none',
+                        boxSizing: 'border-box',
+                        color: '#374151',
+                      }}
+                    />
+                    <div
+                      style={{
+                        position: 'absolute',
+                        right: 12,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M8 4A4 4 0 1 0 8 12A4 4 0 1 0 8 4ZM8 6A2 2 0 1 1 8 10A2 2 0 1 1 8 6Z" fill="#9CA3AF"/>
+                        <path d="M10.293 10.293L16.293 16.293L15.586 17L9.586 11L10.293 10.293Z" fill="#9CA3AF"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Amount Goal (EUR) */}
+                <div>
+                  <label
+                    style={{
+                      color: '#696F79',
+                      fontFamily: 'Red Hat Display, sans-serif',
+                      fontSize: 14,
+                      fontWeight: 600,
+                      marginBottom: 8,
+                      display: 'block',
+                    }}
+                  >
+                    Amount Goal (EUR)
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="0"
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      borderRadius: 8,
+                      border: '1px solid #E5E7EB',
+                      background: '#FFFFFF',
+                      fontSize: 16,
+                      fontFamily: 'Red Hat Display, sans-serif',
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                      color: '#374151',
+                    }}
+                  />
+                </div>
+
+                {/* Strava Connection Status */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '16px 0',
+                  }}
+                >
+                  <Image src="/assets/strava.svg" alt="Strava" width={200} height={200} />
+                </div>
+
+                {/* Create Campaign Button */}
+                <div style={{ marginTop: 8 }}>
+                  <PrimaryActionButton>
+                    Create Campaign
+                  </PrimaryActionButton>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Glassmorphic sticky bottom navbar (INSIDE phone container) */}
         <nav
           style={{
@@ -432,6 +747,19 @@ export default function HomepagePage() {
             </Link>
           </div>
         </nav>
+
+        {/* Add CSS animations */}
+        <style jsx>{`
+          @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+          
+          @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+          }
+        `}</style>
       </div>
     </div>
   );
