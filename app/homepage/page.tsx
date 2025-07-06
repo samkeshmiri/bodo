@@ -105,7 +105,7 @@ export default function HomepagePage() {
         {/* Post SVG */}
         <div className="px-4 pt-2 pb-4">
           <img
-            src="/assets/post-1.svg"
+            src="/assets/Post-1.svg"
             alt="Post"
             style={{ width: '100%', borderRadius: '24px', display: 'block' }}
             draggable={false}

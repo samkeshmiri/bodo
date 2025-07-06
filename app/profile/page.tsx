@@ -83,18 +83,18 @@ export default function ProfilePage() {
         <div className="px-4 pb-8 space-y-4">
           {/* Profile 1 */}
           <div className="flex justify-center">
-            <Image src="/assets/Profile 1.svg" alt="Profile 1" width={280} height={120} style={{ width: '50%', height: 'auto' }} />
+            <Image src="/assets/profile 1.svg" alt="Profile 1" width={280} height={120} style={{ width: '50%', height: 'auto' }} />
           </div>
           
           {/* Profile 2 - horizontally scrollable */}
           <div className="overflow-x-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
             <div className="flex space-x-4" style={{ minWidth: 'max-content' }}>
-              <Image src="/assets/Profile 2.svg" alt="Profile 2" width={450} height={400} style={{ width: 450, height: 'auto', flexShrink: 0 }} />
+              <Image src="/assets/profile 2.svg" alt="Profile 2" width={450} height={400} style={{ width: 450, height: 'auto', flexShrink: 0 }} />
             </div>
           </div>
           
           {/* Profile 3 */}
-          <Image src="/assets/Profile 3.svg" alt="Profile 3" width={350} height={400} style={{ width: '100%', height: 'auto' }} />
+          <Image src="/assets/profile 3.svg" alt="Profile 3" width={350} height={400} style={{ width: '100%', height: 'auto' }} />
 
           {/* Connect Strava button (only if not connected) */}
           {!stravaConnected && (
